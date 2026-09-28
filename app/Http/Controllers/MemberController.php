@@ -2,63 +2,67 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Member;
 use Illuminate\Http\Request;
 
 class MemberController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        $members = Member::orderBy('nama')->get();
+
+        return response()->json($members);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'nomor_anggota' => 'required|string|max:255|unique:members,nomor_anggota',
+            'nama' => 'required|string|max:255',
+            'kelas' => 'nullable|string|max:255',
+            'alamat' => 'nullable|string',
+            'no_hp' => 'nullable|string|max:255',
+            'tanggal_daftar' => 'nullable|date',
+        ]);
+
+        $member = Member::create($validated);
+
+        return response()->json([
+            'message' => 'Anggota berhasil ditambahkan',
+            'data' => $member,
+        ], 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function show(Member $member)
     {
-        //
+        return response()->json($member);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
+    public function update(Request $request, Member $member)
     {
-        //
+        $validated = $request->validate([
+            'nomor_anggota' => 'required|string|max:255|unique:members,nomor_anggota,' . $member->id,
+            'nama' => 'required|string|max:255',
+            'kelas' => 'nullable|string|max:255',
+            'alamat' => 'nullable|string',
+            'no_hp' => 'nullable|string|max:255',
+            'tanggal_daftar' => 'nullable|date',
+        ]);
+
+        $member->update($validated);
+
+        return response()->json([
+            'message' => 'Anggota berhasil diperbarui',
+            'data' => $member,
+        ]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function destroy(Member $member)
     {
-        //
-    }
+        $member->delete();
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return response()->json([
+            'message' => 'Anggota berhasil dihapus',
+        ]);
     }
 }
