@@ -30,6 +30,10 @@ class BookController extends Controller
             });
         }
 
+        if ($request->filled('kategori')) {
+            $query->where('category_id', $request->kategori);
+        }
+
         $books = $query->paginate(10);
 
         return response()->json($books);
