@@ -17,7 +17,6 @@ class MemberController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'nomor_anggota' => 'required|string|max:255|unique:members,nomor_anggota',
             'nama' => 'required|string|max:255',
             'kelas' => 'nullable|string|max:255',
             'alamat' => 'nullable|string',
@@ -26,6 +25,10 @@ class MemberController extends Controller
         ]);
 
         $member = Member::create($validated);
+
+        $member->update([
+            'nomor_anggota' => 'A' . str_pad($member->id, 4, '0', STR_PAD_LEFT),
+        ]);
 
         return response()->json([
             'message' => 'Anggota berhasil ditambahkan',
@@ -41,7 +44,6 @@ class MemberController extends Controller
     public function update(Request $request, Member $member)
     {
         $validated = $request->validate([
-            'nomor_anggota' => 'required|string|max:255|unique:members,nomor_anggota,' . $member->id,
             'nama' => 'required|string|max:255',
             'kelas' => 'nullable|string|max:255',
             'alamat' => 'nullable|string',
