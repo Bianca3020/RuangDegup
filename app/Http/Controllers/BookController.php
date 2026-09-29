@@ -16,6 +16,25 @@ class BookController extends Controller
         return response()->json($books);
     }
 
+    public function catalog(Request $request)
+    {
+        $query = Book::with('category')
+            ->orderBy('judul');
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+
+            $query->where(function ($q) use ($search) {
+                $q->where('judul', 'like', "%{$search}%")
+                ->orWhere('penulis', 'like', "%{$search}%");
+            });
+        }
+
+        $books = $query->paginate(10);
+
+        return response()->json($books);
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
