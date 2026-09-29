@@ -23,16 +23,10 @@ class AuthController extends Controller
             ], 401);
         }
 
-        if ($user->role !== 'admin') {
-            return response()->json([
-                'message' => 'Akun tidak memiliki akses admin',
-            ], 403);
-        }
-
-        $token = $user->createToken('admin-token')->plainTextToken;
+        $token = $user->createToken($user->role . '-token')->plainTextToken;
 
         return response()->json([
-            'message' => 'Login admin berhasil',
+            'message' => 'Login berhasil',
             'token' => $token,
             'user' => $user,
         ]);
