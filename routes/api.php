@@ -6,6 +6,7 @@ use App\Http\Controllers\BorrowingController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ReportController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
@@ -17,6 +18,7 @@ Route::get('/catalog', [BookController::class, 'catalog']);
 
 Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index']);
+    Route::get('/reports/borrowings', [ReportController::class, 'borrowings']);
 
     Route::apiResource('categories', CategoryController::class);
     Route::apiResource('books', BookController::class);
