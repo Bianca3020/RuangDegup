@@ -49,6 +49,12 @@ class CategoryController extends Controller
 
     public function destroy(Category $category)
     {
+        if ($category->books()->exists()) {
+            return response()->json([
+                'message' => 'Kategori tidak dapat dihapus karena masih memiliki buku',
+            ], 422);
+        }
+
         $category->delete();
 
         return response()->json([
