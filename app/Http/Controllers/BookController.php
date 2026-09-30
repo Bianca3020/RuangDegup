@@ -92,6 +92,12 @@ class BookController extends Controller
 
     public function destroy(Book $book)
     {
+        if ($book->borrowings()->exists()) {
+            return response()->json([
+                'message' => 'Buku tidak dapat dihapus karena sudah memiliki riwayat peminjaman',
+            ], 422);
+        }
+
         $book->delete();
 
         return response()->json([
