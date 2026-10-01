@@ -15,6 +15,9 @@ class Member extends Model
         'kelas',
         'alamat',
         'no_hp',
+        'bio',
+        'profile_photo',
+        'profile_background',
         'tanggal_daftar',
     ];
 

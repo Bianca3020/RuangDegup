@@ -20,6 +20,10 @@ Route::get('/catalog', [BookController::class, 'catalog']);
 
 Route::middleware(['auth:sanctum', 'member'])->group(function () {
     Route::get('/member/me', [AuthController::class, 'me']);
+
+    Route::get('/member/profile', [MemberProfileController::class, 'show']);
+    Route::post('/member/profile', [MemberProfileController::class, 'update']);
+
     Route::get('/member/borrowings', [MemberBorrowingController::class, 'index']);
     Route::post('/member/borrowings', [MemberBorrowingController::class, 'store']);
 });
