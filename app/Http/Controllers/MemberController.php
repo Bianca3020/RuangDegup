@@ -61,6 +61,12 @@ class MemberController extends Controller
 
     public function destroy(Member $member)
     {
+        if ($member->borrowings()->exists()) {
+            return response()->json([
+                'message' => 'Anggota tidak dapat dihapus karena sudah memiliki riwayat peminjaman',
+            ], 422);
+        }
+
         $member->delete();
 
         return response()->json([
