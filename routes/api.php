@@ -30,6 +30,9 @@ Route::middleware(['auth:sanctum', 'member'])->group(function () {
     Route::get('/member/profile', [MemberProfileController::class, 'show']);
     Route::post('/member/profile', [MemberProfileController::class, 'update']);
 
+    Route::delete('/member/profile/photo', [MemberProfileController::class, 'deletePhoto']);
+    Route::delete('/member/profile/background', [MemberProfileController::class, 'deleteBackground']);
+
     Route::get('/member/borrowings', [MemberBorrowingController::class, 'index']);
     Route::post('/member/borrowings', [MemberBorrowingController::class, 'store']);
 

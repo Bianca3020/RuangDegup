@@ -46,31 +46,42 @@ class MemberProfileController extends Controller
 
         $validated = $request->validate([
             'bio' => 'nullable|string|max:1000',
-            'profile_photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-            'profile_background' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
+            'profile_photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:1024',
+            'profile_background' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
-        if ($request->hasFile('profile_photo')) {
-            if ($member->profile_photo) {
-                Storage::disk('public')->delete($member->profile_photo);
-            }
+        $oldPhoto = $member->profile_photo;
+        $oldBackground = $member->profile_background;
 
+        if ($request->hasFile('profile_photo')) {
             $validated['profile_photo'] = $request
                 ->file('profile_photo')
-                ->store('profiles/photos', 'public');
+                ->store("profiles/{$member->id}/photo", 'public');
         }
 
         if ($request->hasFile('profile_background')) {
-            if ($member->profile_background) {
-                Storage::disk('public')->delete($member->profile_background);
-            }
-
             $validated['profile_background'] = $request
                 ->file('profile_background')
-                ->store('profiles/backgrounds', 'public');
+                ->store("profiles/{$member->id}/background", 'public');
         }
 
         $member->update($validated);
+
+        if (
+            $request->hasFile('profile_photo') &&
+            $oldPhoto &&
+            $oldPhoto !== $member->profile_photo
+        ) {
+            Storage::disk('public')->delete($oldPhoto);
+        }
+
+        if (
+            $request->hasFile('profile_background') &&
+            $oldBackground &&
+            $oldBackground !== $member->profile_background
+        ) {
+            Storage::disk('public')->delete($oldBackground);
+        }
 
         return response()->json([
             'message' => 'Profil berhasil diperbarui',
@@ -89,6 +100,52 @@ class MemberProfileController extends Controller
                     ? Storage::disk('public')->url($member->profile_background)
                     : null,
             ],
+        ]);
+    }
+
+    public function deletePhoto(Request $request)
+    {
+        $member = $request->user()->member;
+
+        if (!$member) {
+            return response()->json([
+                'message' => 'Data anggota tidak ditemukan',
+            ], 404);
+        }
+
+        if ($member->profile_photo) {
+            Storage::disk('public')->delete($member->profile_photo);
+
+            $member->update([
+                'profile_photo' => null,
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Foto profil berhasil dihapus',
+        ]);
+    }
+
+    public function deleteBackground(Request $request)
+    {
+        $member = $request->user()->member;
+
+        if (!$member) {
+            return response()->json([
+                'message' => 'Data anggota tidak ditemukan',
+            ], 404);
+        }
+
+        if ($member->profile_background) {
+            Storage::disk('public')->delete($member->profile_background);
+
+            $member->update([
+                'profile_background' => null,
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Background profil berhasil dihapus',
         ]);
     }
 }
