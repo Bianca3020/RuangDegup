@@ -8,6 +8,9 @@ use App\Http\Controllers\MemberController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\MemberBorrowingController;
+use App\Http\Controllers\FavoriteController;
+use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\MemberProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
@@ -26,6 +29,15 @@ Route::middleware(['auth:sanctum', 'member'])->group(function () {
 
     Route::get('/member/borrowings', [MemberBorrowingController::class, 'index']);
     Route::post('/member/borrowings', [MemberBorrowingController::class, 'store']);
+
+    Route::get('/member/favorites', [FavoriteController::class, 'index']);
+    Route::post('/member/favorites', [FavoriteController::class, 'store']);
+    Route::delete('/member/favorites/{book}', [FavoriteController::class, 'destroy']);
+
+    Route::get('/member/reviews', [ReviewController::class, 'index']);
+    Route::post('/member/reviews', [ReviewController::class, 'store']);
+    Route::put('/member/reviews/{review}', [ReviewController::class, 'update']);
+    Route::delete('/member/reviews/{review}', [ReviewController::class, 'destroy']);
 });
 
 Route::middleware(['auth:sanctum', 'admin'])->group(function () {

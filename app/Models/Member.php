@@ -34,4 +34,14 @@ class Member extends Model
     {
         return $this->hasMany(Borrowing::class);
     }
+
+    public function favorites(): HasMany
+    {
+        return $this->hasMany(Favorite::class);
+    }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
+    }
 }

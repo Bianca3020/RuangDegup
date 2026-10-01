@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-use App\Models\Borrowing;
-use App\Models\Category;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -30,5 +28,15 @@ class Book extends Model
     public function borrowings(): HasMany
     {
         return $this->hasMany(Borrowing::class);
+    }
+
+    public function favorites(): HasMany
+    {
+        return $this->hasMany(Favorite::class);
+    }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
     }
 }
