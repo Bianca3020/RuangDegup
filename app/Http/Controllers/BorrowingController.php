@@ -6,6 +6,7 @@ use App\Models\Book;
 use App\Models\Borrowing;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class BorrowingController extends Controller
 {
@@ -30,7 +31,7 @@ class BorrowingController extends Controller
         $validated = $request->validate([
             'member_id' => 'required|exists:members,id',
             'book_id' => 'required|exists:books,id',
-            'tanggal_pinjam' => 'required|date|before_or_equal:today',
+            'tanggal_pinjam' => 'required|date|before_or_equal:' . Carbon::today('Asia/Jakarta')->format('Y-m-d'),
         ]);
 
         $borrowing = DB::transaction(function () use ($validated) {
@@ -72,7 +73,7 @@ class BorrowingController extends Controller
     public function update(Request $request, Borrowing $borrowing)
     {
         $validated = $request->validate([
-            'tanggal_kembali' => 'required|date|after_or_equal:' . $borrowing->tanggal_pinjam . '|before_or_equal:today',
+            'tanggal_kembali' => 'required|date|after_or_equal:' . $borrowing->tanggal_pinjam . '|before_or_equal:' . Carbon::today('Asia/Jakarta')->format('Y-m-d'),
         ]);
 
         if ($borrowing->status === 'dikembalikan') {

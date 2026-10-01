@@ -17,19 +17,24 @@ class ReportController extends Controller
             $query->where('status', $request->status);
         }
 
-        $borrowings = $query->get()->map(function ($borrowing) {
-            $jatuhTempo = $borrowing->tanggal_pinjam
-                ->copy()
-                ->addDays(7);
+        $hariIni = Carbon::today('Asia/Jakarta');
+
+        $borrowings = $query->get()->map(function ($borrowing) use ($hariIni) {
+            $tanggalPinjam = Carbon::parse(
+                $borrowing->tanggal_pinjam->format('Y-m-d'),
+                'Asia/Jakarta'
+            );
+
+            $jatuhTempo = $tanggalPinjam->copy()->addDays(7);
 
             $statusTampilan = 'Dikembalikan';
             $terlambatHari = 0;
 
             if ($borrowing->status === 'dipinjam') {
-                if ($jatuhTempo->lt(Carbon::today())) {
+                if ($jatuhTempo->lt($hariIni)) {
                     $statusTampilan = 'Terlambat';
-                    $terlambatHari = $jatuhTempo->diffInDays(Carbon::today());
-                } elseif ($jatuhTempo->isToday()) {
+                    $terlambatHari = $jatuhTempo->diffInDays($hariIni);
+                } elseif ($jatuhTempo->isSameDay($hariIni)) {
                     $statusTampilan = 'Jatuh Tempo';
                 } else {
                     $statusTampilan = 'Dipinjam';
