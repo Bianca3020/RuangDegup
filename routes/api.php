@@ -11,6 +11,7 @@ use App\Http\Controllers\MemberBorrowingController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\MemberProfileController;
+use App\Http\Controllers\MemberDashboardController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
@@ -22,6 +23,8 @@ Route::post('/logout', [AuthController::class, 'logout'])
 Route::get('/catalog', [BookController::class, 'catalog']);
 
 Route::middleware(['auth:sanctum', 'member'])->group(function () {
+    Route::get('/member/dashboard', [MemberDashboardController::class, 'index']);
+
     Route::get('/member/me', [AuthController::class, 'me']);
 
     Route::get('/member/profile', [MemberProfileController::class, 'show']);
