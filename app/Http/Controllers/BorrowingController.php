@@ -38,6 +38,15 @@ class BorrowingController extends Controller
 
             $book = Book::lockForUpdate()->findOrFail($validated['book_id']);
 
+            $alreadyBorrowed = Borrowing::where('member_id', $validated['member_id'])
+                ->where('book_id', $book->id)
+                ->where('status', 'dipinjam')
+                ->exists();
+
+            if ($alreadyBorrowed) {
+                abort(422, 'Buku ini masih sedang dipinjam');
+            }
+
             if ($book->stok <= 0) {
                 abort(422, 'Stok buku sedang habis');
             }
