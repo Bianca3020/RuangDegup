@@ -18,7 +18,9 @@ Route::get('/catalog', [BookController::class, 'catalog']);
 
 Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index']);
+
     Route::get('/reports/borrowings', [ReportController::class, 'borrowings']);
+    Route::get('/reports/borrowings/pdf', [ReportController::class, 'exportPdf']);
 
     Route::apiResource('categories', CategoryController::class);
     Route::apiResource('books', BookController::class);
