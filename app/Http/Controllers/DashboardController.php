@@ -21,13 +21,18 @@ class DashboardController extends Controller
 
         $sedangDipinjam = $peminjamanAktif->count();
 
-        $terlambat = $peminjamanAktif
-            ->filter(function ($borrowing) {
-                $jatuhTempo = $borrowing->tanggal_pinjam
-                    ->copy()
-                    ->addDays(7);
+        $hariIni = Carbon::today('Asia/Jakarta');
 
-                return $jatuhTempo->lt(Carbon::today());
+        $terlambat = $peminjamanAktif
+            ->filter(function ($borrowing) use ($hariIni) {
+                $tanggalPinjam = Carbon::parse(
+                    $borrowing->tanggal_pinjam->format('Y-m-d'),
+                    'Asia/Jakarta'
+                );
+
+                $jatuhTempo = $tanggalPinjam->copy()->addDays(7);
+
+                return $jatuhTempo->lt($hariIni);
             })
             ->count();
 
