@@ -30,7 +30,7 @@ class BorrowingController extends Controller
         $validated = $request->validate([
             'member_id' => 'required|exists:members,id',
             'book_id' => 'required|exists:books,id',
-            'tanggal_pinjam' => 'required|date',
+            'tanggal_pinjam' => 'required|date|before_or_equal:today',
         ]);
 
         $borrowing = DB::transaction(function () use ($validated) {
@@ -72,7 +72,7 @@ class BorrowingController extends Controller
     public function update(Request $request, Borrowing $borrowing)
     {
         $validated = $request->validate([
-            'tanggal_kembali' => 'required|date|after_or_equal:' . $borrowing->tanggal_pinjam,
+            'tanggal_kembali' => 'required|date|after_or_equal:' . $borrowing->tanggal_pinjam . '|before_or_equal:today',
         ]);
 
         if ($borrowing->status === 'dikembalikan') {
