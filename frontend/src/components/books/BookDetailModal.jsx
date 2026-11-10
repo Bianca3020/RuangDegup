@@ -1,11 +1,9 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import {
   CloseIcon,
   HeartIcon,
   StarIcon,
-  BookOpenIcon,
   CalendarIcon,
-  LayersIcon,
   CheckIcon,
   InfoIcon,
 } from '../common/Icons'

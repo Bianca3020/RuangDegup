@@ -1,5 +1,4 @@
-import React from 'react'
-import { ArrowUpRight, BookOpenIcon } from '../common/Icons'
+import { ArrowUpRight } from '../common/Icons'
 import { Button } from '../common/Button'
 
 export function CtaBanner({ onExploreClick, onRegisterClick, currentUser }) {

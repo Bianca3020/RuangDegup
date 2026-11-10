@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   UserIcon,
   CameraIcon,
@@ -12,7 +12,6 @@ import {
   PhoneIcon,
   MapPinIcon,
   MailIcon,
-  CalendarIcon,
   TagIcon,
 } from '../common/Icons'
 import { Button } from '../common/Button'

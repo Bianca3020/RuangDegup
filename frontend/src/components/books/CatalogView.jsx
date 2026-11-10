@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { BookCard } from './BookCard'
 import {
   SearchIcon,
@@ -8,7 +8,6 @@ import {
   RefreshIcon,
   BookOpenIcon,
   CloseIcon,
-  SparklesIcon,
 } from '../common/Icons'
 import { Button } from '../common/Button'
 import { fetchCatalog } from '../../services/api'
@@ -154,13 +153,13 @@ export function CatalogView({
       setSearchInput(initialSearch)
       setActiveSearch(initialSearch)
     }
-  }, [initialSearch])
+  }, [initialSearch, activeSearch])
 
   useEffect(() => {
     if (initialCategory !== selectedCategory) {
       setSelectedCategory(initialCategory)
     }
-  }, [initialCategory])
+  }, [initialCategory, selectedCategory])
 
   // Fetch catalog from Laravel API
   const loadCatalog = useCallback(

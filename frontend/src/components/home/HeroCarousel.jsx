@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { ArrowLeft, ArrowRight, ArrowUpRight, ChevronLeft, ChevronRight, SparklesIcon } from '../common/Icons'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { ArrowRight, ArrowUpRight, ChevronLeft, ChevronRight, SparklesIcon } from '../common/Icons'
 import { Button } from '../common/Button'
 import heroFallback from '../../assets/hero.png'
 

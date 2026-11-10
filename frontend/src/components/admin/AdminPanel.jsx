@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   BookOpenIcon,
   TagIcon,
@@ -14,9 +14,6 @@ import {
   FileTextIcon,
   SearchIcon,
   CloseIcon,
-  CalendarIcon,
-  ChevronRight,
-  FilterIcon,
 } from '../common/Icons'
 import { Button } from '../common/Button'
 import {
@@ -107,6 +104,17 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
     tanggal_pinjam: new Date().toISOString().split('T')[0],
   })
   const [returnDate, setReturnDate] = useState(new Date().toISOString().split('T')[0])
+
+  // Close modal on Escape key
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if (e.key === 'Escape' && modalType) {
+        setModalType(null)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [modalType])
 
   /* ==========================================================================
      DATA LOADERS

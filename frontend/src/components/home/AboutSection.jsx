@@ -1,5 +1,4 @@
-import React from 'react'
-import { BookOpenIcon, ClockIcon, SparklesIcon, CheckIcon } from '../common/Icons'
+import { BookOpenIcon, ClockIcon, SparklesIcon } from '../common/Icons'
 
 export function AboutSection() {
   return (

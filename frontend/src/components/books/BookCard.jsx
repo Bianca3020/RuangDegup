@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { BookOpenIcon, HeartIcon, ArrowUpRight } from '../common/Icons'
+import { useState } from 'react'
+import { HeartIcon, ArrowUpRight } from '../common/Icons'
 
 export function BookCard({ book, onSelectBook, onBorrow, onToggleFavorite, isFavorite = false }) {
   const [imgError, setImgError] = useState(false)

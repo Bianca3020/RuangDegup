@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 import { Navbar } from './components/layout/Navbar'
 import { Footer } from './components/layout/Footer'
@@ -49,7 +49,43 @@ function App() {
     if (user) {
       setCurrentUser(user)
     }
+
+    function syncViewWithHash() {
+      const hash = window.location.hash
+      const u = getStoredUser()
+      if ((hash === '#dashboard-admin' || hash === '#admin') && u?.role === 'admin') {
+        setCurrentView('admin-panel')
+      } else if ((hash === '#dashboard-member' || hash === '#ruang-anggota') && u?.role === 'member') {
+        setCurrentView('member-dashboard')
+      } else if (hash === '#profil' && u?.role === 'member') {
+        setCurrentView('member-profile')
+      }
+    }
+
+    syncViewWithHash()
+    window.addEventListener('hashchange', syncViewWithHash)
+    return () => window.removeEventListener('hashchange', syncViewWithHash)
   }, [])
+
+  // Auto-dismiss notification after 6 seconds
+  useEffect(() => {
+    if (!notice) return
+    const timer = setTimeout(() => {
+      setNotice('')
+    }, 6000)
+    return () => clearTimeout(timer)
+  }, [notice])
+
+  // Dynamic document title
+  useEffect(() => {
+    const titleMap = {
+      home: 'RuangDegup — Perpustakaan Digital SMKN 6 Surakarta',
+      'member-dashboard': 'Ruang Anggota — RuangDegup',
+      'member-profile': 'Profil Siswa — RuangDegup',
+      'admin-panel': 'Panel Administrasi — RuangDegup',
+    }
+    document.title = titleMap[currentView] || 'RuangDegup — SMKN 6 Surakarta'
+  }, [currentView])
 
   // Load member favorites when logged in
   useEffect(() => {
@@ -316,7 +352,7 @@ function App() {
               setCurrentView('member-dashboard')
               window.scrollTo({ top: 0, behavior: 'smooth' })
             }}
-            onProfileUpdated={(updated) => {
+            onProfileUpdated={() => {
               setNotice('Profil berhasil diperbarui!')
             }}
           />

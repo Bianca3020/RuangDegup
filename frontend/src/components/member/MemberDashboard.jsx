@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   BookOpenIcon,
   HeartIcon,
@@ -10,7 +10,6 @@ import {
   ArrowRight,
   ArrowUpRight,
   RefreshIcon,
-  CalendarIcon,
   CloseIcon,
 } from '../common/Icons'
 import { Button } from '../common/Button'

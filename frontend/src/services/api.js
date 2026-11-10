@@ -7,7 +7,7 @@ export const USER_KEY = 'ruangdegup_user'
 export function getStoredToken() {
   try {
     return localStorage.getItem(TOKEN_KEY)
-  } catch (e) {
+  } catch {
     return null
   }
 }
@@ -28,7 +28,7 @@ export function getStoredUser() {
   try {
     const raw = localStorage.getItem(USER_KEY)
     return raw ? JSON.parse(raw) : null
-  } catch (e) {
+  } catch {
     return null
   }
 }
