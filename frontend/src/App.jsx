@@ -12,6 +12,7 @@ import { CatalogView } from './components/books/CatalogView'
 import { BookDetailModal } from './components/books/BookDetailModal'
 import { AuthModal } from './components/auth/AuthModal'
 import { MemberDashboard } from './components/member/MemberDashboard'
+import { MemberProfileView } from './components/member/MemberProfileView'
 import {
   getStoredUser,
   logoutUser,
@@ -219,6 +220,16 @@ function App() {
       return
     }
 
+    if (target === 'member-profile') {
+      if (currentUser && currentUser.role === 'member') {
+        setCurrentView('member-profile')
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      } else {
+        handleRequireLogin('mengakses Profil Anggota')
+      }
+      return
+    }
+
     if (target === 'admin-dashboard') {
       setNotice('Halaman Admin Dashboard akan diintegrasikan pada Fase 8.')
       return
@@ -281,13 +292,25 @@ function App() {
 
       {/* MAIN CONTENT */}
       <main id="main-content">
-        {currentView === 'member-dashboard' ? (
+        {currentView === 'member-profile' ? (
+          <MemberProfileView
+            currentUser={currentUser}
+            onBackToDashboard={() => {
+              setCurrentView('member-dashboard')
+              window.scrollTo({ top: 0, behavior: 'smooth' })
+            }}
+            onProfileUpdated={(updated) => {
+              setNotice('Profil berhasil diperbarui!')
+            }}
+          />
+        ) : currentView === 'member-dashboard' ? (
           <MemberDashboard
             currentUser={currentUser}
             onSelectBook={handleSelectBook}
             onExploreBooks={handleExploreClick}
             onNavigateToProfile={() => {
-              setNotice('Pengelolaan Profil Lengkap dan Upload Berkas akan diaktifkan pada Fase 6.')
+              setCurrentView('member-profile')
+              window.scrollTo({ top: 0, behavior: 'smooth' })
             }}
           />
         ) : (
