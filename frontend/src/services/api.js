@@ -1,7 +1,3 @@
-/**
- * RuangDegup API Client
- * Centralized API integration layer connecting React Frontend to Laravel REST API
- */
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api'
 
@@ -58,9 +54,6 @@ export function clearAuth() {
   }
 }
 
-/**
- * Core HTTP Request Wrapper
- */
 export async function apiRequest(endpoint, options = {}) {
   const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`
 
@@ -74,7 +67,6 @@ export async function apiRequest(endpoint, options = {}) {
     headers.Authorization = `Bearer ${token}`
   }
 
-  // Handle FormData vs JSON
   let body = options.body
   if (body && !(body instanceof FormData) && typeof body === 'object') {
     headers['Content-Type'] = 'application/json'
@@ -109,7 +101,6 @@ export async function apiRequest(endpoint, options = {}) {
     return data
   } catch (error) {
     if (!error.status) {
-      // Network failure or CORS issue
       const netError = new Error(
         'Gagal terhubung ke server perpustakaan. Pastikan server backend sedang aktif.'
       )

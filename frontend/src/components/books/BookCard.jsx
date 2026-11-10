@@ -10,7 +10,7 @@ export function BookCard({ book, onSelectBook, onBorrow, onToggleFavorite, isFav
 
   return (
     <article className="book-card" aria-label={`Buku: ${book.judul}`}>
-      {/* COVER WRAPPER */}
+
       <div className="book-card__cover-wrapper">
         {hasCover ? (
           <img
@@ -30,7 +30,6 @@ export function BookCard({ book, onSelectBook, onBorrow, onToggleFavorite, isFav
           </div>
         )}
 
-        {/* AVAILABILITY BADGE */}
         <div className="book-card__badge-row">
           <span
             className={`stock-badge ${isAvailable ? 'stock-badge--available' : 'stock-badge--empty'}`}
@@ -54,7 +53,6 @@ export function BookCard({ book, onSelectBook, onBorrow, onToggleFavorite, isFav
         </div>
       </div>
 
-      {/* CARD BODY */}
       <div className="book-card__body">
         <div className="book-card__meta">
           <span className="book-card__category">{categoryName}</span>

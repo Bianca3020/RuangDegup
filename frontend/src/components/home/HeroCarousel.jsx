@@ -65,9 +65,7 @@ export function HeroCarousel({ onExploreClick, onAboutClick }) {
     setActiveSlide(index)
   }, [])
 
-  // Autoplay 5 detik dengan pause on hover / focus
   useEffect(() => {
-    // Check prefers-reduced-motion
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
     if (mediaQuery.matches) return undefined
 
@@ -80,7 +78,6 @@ export function HeroCarousel({ onExploreClick, onAboutClick }) {
     return () => clearInterval(timer)
   }, [paused, nextSlide])
 
-  // Keyboard navigation support: ArrowLeft, ArrowRight
   function handleKeyDown(e) {
     if (e.key === 'ArrowLeft') {
       e.preventDefault()
@@ -109,7 +106,7 @@ export function HeroCarousel({ onExploreClick, onAboutClick }) {
       onFocus={() => setPaused(true)}
       onBlur={() => setPaused(false)}
     >
-      {/* LEFT COLUMN: EDITORIAL COPY */}
+
       <div className="hero-copy">
         <div className="hero-eyebrow">
           <span className="eyebrow-dot" aria-hidden="true" />
@@ -129,7 +126,6 @@ export function HeroCarousel({ onExploreClick, onAboutClick }) {
           {currentSlide.description}
         </p>
 
-        {/* CTA ACTIONS */}
         <div className="hero-actions">
           <Button
             variant="sage"
@@ -160,7 +156,6 @@ export function HeroCarousel({ onExploreClick, onAboutClick }) {
           </a>
         </div>
 
-        {/* CAROUSEL BOTTOM CONTROLS */}
         <div className="hero-bottom">
           <div className="carousel-dots" role="tablist" aria-label="Pilih slide">
             {slides.map((slide, index) => (
@@ -203,7 +198,6 @@ export function HeroCarousel({ onExploreClick, onAboutClick }) {
         </div>
       </div>
 
-      {/* RIGHT COLUMN: VISUAL IMAGE */}
       <div className="hero-visual" aria-hidden="true">
         <img
           key={`img-${activeSlide}`}

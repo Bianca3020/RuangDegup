@@ -14,7 +14,6 @@ export function Navbar({ currentUser, onLoginClick, onRegisterClick, onLogout, o
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  // Close menu on Escape key
   useEffect(() => {
     function handleKeyDown(e) {
       if (e.key === 'Escape' && menuOpen) {
@@ -36,7 +35,7 @@ export function Navbar({ currentUser, onLoginClick, onRegisterClick, onLogout, o
   return (
     <header className={`site-header ${scrolled ? 'is-scrolled' : ''}`}>
       <div className="site-header__inner">
-        {/* BRAND LOGO */}
+
         <a
           href="#beranda"
           className="brand"
@@ -52,7 +51,6 @@ export function Navbar({ currentUser, onLoginClick, onRegisterClick, onLogout, o
           </span>
         </a>
 
-        {/* DESKTOP NAV */}
         <nav className="main-nav" aria-label="Navigasi utama">
           <a href="#beranda" onClick={(e) => handleNavClick(e, 'home')}>
             Beranda
@@ -66,16 +64,45 @@ export function Navbar({ currentUser, onLoginClick, onRegisterClick, onLogout, o
           <a href="#tentang" onClick={(e) => handleNavClick(e, 'about')}>
             Tentang
           </a>
+          {currentUser && currentUser.role === 'member' && (
+            <a
+              href="#dashboard-member"
+              onClick={(e) => handleNavClick(e, 'member-dashboard')}
+              className="nav-link--highlight"
+            >
+              Ruang Anggota
+            </a>
+          )}
+          {currentUser && currentUser.role === 'admin' && (
+            <a
+              href="#dashboard-admin"
+              onClick={(e) => handleNavClick(e, 'admin-dashboard')}
+              className="nav-link--highlight"
+            >
+              Admin Panel
+            </a>
+          )}
         </nav>
 
-        {/* ACTIONS */}
         <div className="header-actions">
           {currentUser ? (
             <div className="user-nav-badge">
-              <span className="user-nav-avatar">
-                <UserIcon size={16} />
-              </span>
-              <span className="user-nav-name">{currentUser.name || 'Member'}</span>
+              <button
+                type="button"
+                className="user-nav-profile-btn"
+                onClick={(e) =>
+                  handleNavClick(
+                    e,
+                    currentUser.role === 'admin' ? 'admin-dashboard' : 'member-dashboard'
+                  )
+                }
+                title="Buka Dashboard"
+              >
+                <span className="user-nav-avatar">
+                  <UserIcon size={16} />
+                </span>
+                <span className="user-nav-name">{currentUser.name || 'Member'}</span>
+              </button>
               <span className="user-nav-role">{currentUser.role === 'admin' ? 'Admin' : 'Member'}</span>
               <button
                 type="button"
@@ -108,7 +135,6 @@ export function Navbar({ currentUser, onLoginClick, onRegisterClick, onLogout, o
             </>
           )}
 
-          {/* MOBILE TOGGLE */}
           <button
             className="mobile-menu-toggle"
             type="button"
@@ -121,7 +147,6 @@ export function Navbar({ currentUser, onLoginClick, onRegisterClick, onLogout, o
         </div>
       </div>
 
-      {/* MOBILE DRAWER */}
       <div
         className={`mobile-drawer ${menuOpen ? 'is-open' : ''}`}
         aria-hidden={!menuOpen}
@@ -139,6 +164,24 @@ export function Navbar({ currentUser, onLoginClick, onRegisterClick, onLogout, o
           <a href="#tentang" onClick={(e) => handleNavClick(e, 'about')}>
             Tentang
           </a>
+          {currentUser && currentUser.role === 'member' && (
+            <a
+              href="#dashboard-member"
+              onClick={(e) => handleNavClick(e, 'member-dashboard')}
+              style={{ color: 'var(--plum)', fontWeight: 700 }}
+            >
+              Ruang Anggota
+            </a>
+          )}
+          {currentUser && currentUser.role === 'admin' && (
+            <a
+              href="#dashboard-admin"
+              onClick={(e) => handleNavClick(e, 'admin-dashboard')}
+              style={{ color: 'var(--plum)', fontWeight: 700 }}
+            >
+              Admin Panel
+            </a>
+          )}
         </nav>
 
         <div className="mobile-drawer-actions">

@@ -13,7 +13,7 @@ export function Footer({ onNavigate }) {
     <footer className="site-footer">
       <div className="page-container">
         <div className="site-footer__grid">
-          {/* BRAND COLUMN */}
+
           <div className="site-footer__brand-col">
             <a href="#beranda" className="brand" onClick={(e) => handleLink(e, 'home')}>
               <span className="brand-mark">r.</span>
@@ -29,7 +29,6 @@ export function Footer({ onNavigate }) {
             </p>
           </div>
 
-          {/* EXPLORE COLUMN */}
           <div className="site-footer__col">
             <h4 className="site-footer__title">Jelajahi</h4>
             <ul className="site-footer__links">
@@ -48,7 +47,6 @@ export function Footer({ onNavigate }) {
             </ul>
           </div>
 
-          {/* OPERATIONAL HOURS */}
           <div className="site-footer__col">
             <h4 className="site-footer__title">
               <ClockIcon size={14} className="inline-icon" /> Jam Layanan
@@ -69,7 +67,6 @@ export function Footer({ onNavigate }) {
             </div>
           </div>
 
-          {/* EDITORIAL NOTE */}
           <div className="site-footer__col">
             <h4 className="site-footer__title">
               <BookOpenIcon size={14} className="inline-icon" /> Ruang Baca
