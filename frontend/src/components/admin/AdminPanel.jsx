@@ -739,7 +739,7 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
                 <thead>
                   <tr>
                     <th>Buku</th>
-                    <th>Kategori</th>
+                    <th className="admin-th-category">Kategori</th>
                     <th>Penerbit & Tahun</th>
                     <th>ISBN</th>
                     <th>Stok</th>
@@ -771,7 +771,7 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
                             </div>
                           </div>
                         </td>
-                        <td>
+                        <td className="admin-td-category">
                           <span className="admin-badge admin-badge--category">
                             {b.category?.nama_kategori || 'Tanpa Kategori'}
                           </span>
