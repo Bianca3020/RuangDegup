@@ -13,6 +13,7 @@ import { BookDetailModal } from './components/books/BookDetailModal'
 import { AuthModal } from './components/auth/AuthModal'
 import { MemberDashboard } from './components/member/MemberDashboard'
 import { MemberProfileView } from './components/member/MemberProfileView'
+import { AdminPanel } from './components/admin/AdminPanel'
 import {
   getStoredUser,
   logoutUser,
@@ -99,6 +100,8 @@ function App() {
           if (Array.isArray(data)) setFavoritesList(data)
         })
         .catch(() => {})
+    } else if (user.role === 'admin') {
+      setCurrentView('admin-panel')
     }
   }
 
@@ -231,7 +234,13 @@ function App() {
     }
 
     if (target === 'admin-dashboard') {
-      setNotice('Halaman Admin Dashboard akan diintegrasikan pada Fase 8.')
+      if (currentUser && currentUser.role === 'admin') {
+        setCurrentView('admin-panel')
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      } else {
+        setNotice('Akses khusus Petugas Perpustakaan. Silakan masuk menggunakan akun Administrator.')
+        handleLoginClick()
+      }
       return
     }
 
@@ -292,7 +301,15 @@ function App() {
 
       {/* MAIN CONTENT */}
       <main id="main-content">
-        {currentView === 'member-profile' ? (
+        {currentView === 'admin-panel' ? (
+          <AdminPanel
+            currentUser={currentUser}
+            onExitAdmin={() => {
+              setCurrentView('home')
+              window.scrollTo({ top: 0, behavior: 'smooth' })
+            }}
+          />
+        ) : currentView === 'member-profile' ? (
           <MemberProfileView
             currentUser={currentUser}
             onBackToDashboard={() => {

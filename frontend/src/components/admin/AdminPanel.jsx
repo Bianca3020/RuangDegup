@@ -1,0 +1,1771 @@
+import React, { useState, useEffect, useCallback } from 'react'
+import {
+  BookOpenIcon,
+  TagIcon,
+  UsersIcon,
+  ClockIcon,
+  CheckCircleIcon,
+  AlertCircleIcon,
+  RefreshIcon,
+  PlusIcon,
+  EditIcon,
+  TrashIcon,
+  DownloadIcon,
+  FileTextIcon,
+  SearchIcon,
+  CloseIcon,
+  CalendarIcon,
+  ChevronRight,
+  FilterIcon,
+} from '../common/Icons'
+import { Button } from '../common/Button'
+import {
+  getAdminDashboard,
+  getAdminCategories,
+  createAdminCategory,
+  updateAdminCategory,
+  deleteAdminCategory,
+  getAdminBooks,
+  createAdminBook,
+  updateAdminBook,
+  deleteAdminBook,
+  getAdminMembers,
+  createAdminMember,
+  updateAdminMember,
+  deleteAdminMember,
+  getAdminBorrowings,
+  createAdminBorrowing,
+  returnAdminBorrowing,
+  getBorrowingReports,
+  downloadBorrowingReportPdf,
+} from '../../services/api'
+
+// Jurusan SMKN 6 Surakarta
+const SMKN6_JURUSAN = [
+  { kode: 'AKL', nama: 'Akuntansi dan Keuangan Lembaga' },
+  { kode: 'PM', nama: 'Pemasaran' },
+  { kode: 'MPLB', nama: 'Manajemen Perkantoran dan Layanan Bisnis' },
+  { kode: 'ULP', nama: 'Usaha Layanan Pariwisata' },
+  { kode: 'DKV', nama: 'Desain Komunikasi Visual' },
+  { kode: 'PPLG', nama: 'Pengembangan Perangkat Lunak dan Gim' },
+  { kode: 'BP', nama: 'Broadcasting dan Perfilman' },
+]
+
+export function AdminPanel({ currentUser, onExitAdmin }) {
+  const [activeTab, setActiveTab] = useState('dashboard') // 'dashboard' | 'books' | 'categories' | 'members' | 'borrowings' | 'reports'
+
+  // Loading & Global notification
+  const [loading, setLoading] = useState(false)
+  const [feedback, setFeedback] = useState({ type: '', message: '' })
+
+  // Dashboard Data
+  const [dashboardStats, setDashboardStats] = useState(null)
+
+  // Resources Data
+  const [books, setBooks] = useState([])
+  const [categories, setCategories] = useState([])
+  const [members, setMembers] = useState([])
+  const [borrowings, setBorrowings] = useState([])
+  const [reports, setReports] = useState([])
+  const [reportFilter, setReportFilter] = useState('')
+
+  // Search & Filters in Tabs
+  const [bookSearch, setBookSearch] = useState('')
+  const [bookCategoryFilter, setBookCategoryFilter] = useState('')
+  const [memberSearch, setMemberSearch] = useState('')
+
+  // Modals state
+  const [modalType, setModalType] = useState(null) // 'book' | 'category' | 'member' | 'borrowing' | 'return' | null
+  const [modalMode, setModalMode] = useState('create') // 'create' | 'edit'
+  const [selectedItem, setSelectedItem] = useState(null)
+  const [modalSubmitting, setModalSubmitting] = useState(false)
+
+  // Form states
+  const [categoryForm, setCategoryForm] = useState({ nama_kategori: '' })
+  const [bookForm, setBookForm] = useState({
+    judul: '',
+    category_id: '',
+    penulis: '',
+    penerbit: '',
+    tahun_terbit: '',
+    isbn: '',
+    stok: 1,
+    cover: '',
+    deskripsi: '',
+  })
+  const [memberForm, setMemberForm] = useState({
+    nama: '',
+    tingkat: 'X',
+    jurusan: 'PPLG',
+    alamat: '',
+    no_hp: '',
+    tanggal_daftar: new Date().toISOString().split('T')[0],
+  })
+  const [borrowingForm, setBorrowingForm] = useState({
+    member_id: '',
+    book_id: '',
+    tanggal_pinjam: new Date().toISOString().split('T')[0],
+  })
+  const [returnDate, setReturnDate] = useState(new Date().toISOString().split('T')[0])
+
+  /* ==========================================================================
+     DATA LOADERS
+     ========================================================================== */
+
+  const loadDashboardData = useCallback(async () => {
+    try {
+      const data = await getAdminDashboard()
+      setDashboardStats(data)
+    } catch (err) {
+      setFeedback({ type: 'error', message: err.message || 'Gagal memuat statistik dashboard.' })
+    }
+  }, [])
+
+  const loadCategories = useCallback(async () => {
+    try {
+      const data = await getAdminCategories()
+      setCategories(Array.isArray(data) ? data : [])
+    } catch (err) {
+      setFeedback({ type: 'error', message: err.message || 'Gagal memuat data kategori.' })
+    }
+  }, [])
+
+  const loadBooks = useCallback(async () => {
+    try {
+      const data = await getAdminBooks()
+      setBooks(Array.isArray(data) ? data : [])
+    } catch (err) {
+      setFeedback({ type: 'error', message: err.message || 'Gagal memuat data buku.' })
+    }
+  }, [])
+
+  const loadMembers = useCallback(async () => {
+    try {
+      const data = await getAdminMembers()
+      setMembers(Array.isArray(data) ? data : [])
+    } catch (err) {
+      setFeedback({ type: 'error', message: err.message || 'Gagal memuat data anggota.' })
+    }
+  }, [])
+
+  const loadBorrowings = useCallback(async () => {
+    try {
+      const data = await getAdminBorrowings()
+      setBorrowings(Array.isArray(data) ? data : [])
+    } catch (err) {
+      setFeedback({ type: 'error', message: err.message || 'Gagal memuat data peminjaman.' })
+    }
+  }, [])
+
+  const loadReports = useCallback(async (status = '') => {
+    try {
+      const data = await getBorrowingReports(status)
+      setReports(Array.isArray(data) ? data : [])
+    } catch (err) {
+      setFeedback({ type: 'error', message: err.message || 'Gagal memuat laporan peminjaman.' })
+    }
+  }, [])
+
+  // Load based on active tab
+  useEffect(() => {
+    if (activeTab === 'dashboard') {
+      loadDashboardData()
+    } else if (activeTab === 'books') {
+      loadBooks()
+      loadCategories()
+    } else if (activeTab === 'categories') {
+      loadCategories()
+    } else if (activeTab === 'members') {
+      loadMembers()
+    } else if (activeTab === 'borrowings') {
+      loadBorrowings()
+      loadMembers()
+      loadBooks()
+    } else if (activeTab === 'reports') {
+      loadReports(reportFilter)
+    }
+  }, [activeTab, loadDashboardData, loadBooks, loadCategories, loadMembers, loadBorrowings, loadReports, reportFilter])
+
+  /* ==========================================================================
+     CATEGORY ACTIONS
+     ========================================================================== */
+
+  function handleOpenCategoryModal(mode = 'create', category = null) {
+    setModalType('category')
+    setModalMode(mode)
+    setSelectedItem(category)
+    setCategoryForm({
+      nama_kategori: category ? category.nama_kategori : '',
+    })
+  }
+
+  async function handleSaveCategory(e) {
+    e.preventDefault()
+    setModalSubmitting(true)
+    try {
+      if (modalMode === 'create') {
+        const res = await createAdminCategory(categoryForm)
+        setFeedback({ type: 'success', message: res.message || 'Kategori berhasil ditambahkan.' })
+      } else {
+        const res = await updateAdminCategory(selectedItem.id, categoryForm)
+        setFeedback({ type: 'success', message: res.message || 'Kategori berhasil diperbarui.' })
+      }
+      setModalType(null)
+      loadCategories()
+    } catch (err) {
+      setFeedback({ type: 'error', message: err.message || 'Gagal menyimpan kategori.' })
+    } finally {
+      setModalSubmitting(false)
+    }
+  }
+
+  async function handleDeleteCategory(category) {
+    if (!window.confirm(`Hapus kategori "${category.nama_kategori}"?`)) return
+    try {
+      const res = await deleteAdminCategory(category.id)
+      setFeedback({ type: 'success', message: res.message || 'Kategori berhasil dihapus.' })
+      loadCategories()
+    } catch (err) {
+      setFeedback({ type: 'error', message: err.message || 'Gagal menghapus kategori.' })
+    }
+  }
+
+  /* ==========================================================================
+     BOOK ACTIONS
+     ========================================================================== */
+
+  function handleOpenBookModal(mode = 'create', book = null) {
+    setModalType('book')
+    setModalMode(mode)
+    setSelectedItem(book)
+    setBookForm({
+      judul: book ? book.judul : '',
+      category_id: book ? (book.category_id || (book.category && book.category.id) || '') : (categories[0]?.id || ''),
+      penulis: book ? book.penulis : '',
+      penerbit: book ? (book.penerbit || '') : '',
+      tahun_terbit: book ? (book.tahun_terbit || '') : '',
+      isbn: book ? (book.isbn || '') : '',
+      stok: book ? (book.stok ?? 1) : 1,
+      cover: book ? (book.cover || '') : '',
+      deskripsi: book ? (book.deskripsi || '') : '',
+    })
+  }
+
+  async function handleSaveBook(e) {
+    e.preventDefault()
+    setModalSubmitting(true)
+    try {
+      const payload = {
+        ...bookForm,
+        stok: Number(bookForm.stok),
+        tahun_terbit: bookForm.tahun_terbit ? Number(bookForm.tahun_terbit) : null,
+      }
+      if (modalMode === 'create') {
+        const res = await createAdminBook(payload)
+        setFeedback({ type: 'success', message: res.message || 'Buku berhasil ditambahkan.' })
+      } else {
+        const res = await updateAdminBook(selectedItem.id, payload)
+        setFeedback({ type: 'success', message: res.message || 'Buku berhasil diperbarui.' })
+      }
+      setModalType(null)
+      loadBooks()
+    } catch (err) {
+      setFeedback({ type: 'error', message: err.message || 'Gagal menyimpan data buku.' })
+    } finally {
+      setModalSubmitting(false)
+    }
+  }
+
+  async function handleDeleteBook(book) {
+    if (!window.confirm(`Hapus buku "${book.judul}"?`)) return
+    try {
+      const res = await deleteAdminBook(book.id)
+      setFeedback({ type: 'success', message: res.message || 'Buku berhasil dihapus.' })
+      loadBooks()
+    } catch (err) {
+      setFeedback({ type: 'error', message: err.message || 'Gagal menghapus buku.' })
+    }
+  }
+
+  /* ==========================================================================
+     MEMBER ACTIONS
+     ========================================================================== */
+
+  function handleOpenMemberModal(mode = 'create', member = null) {
+    setModalType('member')
+    setModalMode(mode)
+    setSelectedItem(member)
+
+    let tingkat = 'X'
+    let jurusan = 'PPLG'
+    if (member && member.kelas) {
+      const parts = member.kelas.split(' ')
+      if (parts[0]) tingkat = parts[0]
+      if (parts[1]) jurusan = parts[1]
+    }
+
+    setMemberForm({
+      nama: member ? member.nama : '',
+      tingkat: tingkat,
+      jurusan: jurusan,
+      alamat: member ? (member.alamat || '') : '',
+      no_hp: member ? (member.no_hp || '') : '',
+      tanggal_daftar: member ? (member.tanggal_daftar ? member.tanggal_daftar.split('T')[0] : '') : new Date().toISOString().split('T')[0],
+    })
+  }
+
+  async function handleSaveMember(e) {
+    e.preventDefault()
+    setModalSubmitting(true)
+    try {
+      const payload = {
+        nama: memberForm.nama,
+        kelas: `${memberForm.tingkat} ${memberForm.jurusan}`,
+        alamat: memberForm.alamat || null,
+        no_hp: memberForm.no_hp || null,
+        tanggal_daftar: memberForm.tanggal_daftar || null,
+      }
+
+      if (modalMode === 'create') {
+        const res = await createAdminMember(payload)
+        setFeedback({ type: 'success', message: res.message || 'Anggota berhasil didaftarkan.' })
+      } else {
+        const res = await updateAdminMember(selectedItem.id, payload)
+        setFeedback({ type: 'success', message: res.message || 'Data anggota berhasil diperbarui.' })
+      }
+      setModalType(null)
+      loadMembers()
+    } catch (err) {
+      setFeedback({ type: 'error', message: err.message || 'Gagal menyimpan data anggota.' })
+    } finally {
+      setModalSubmitting(false)
+    }
+  }
+
+  async function handleDeleteMember(member) {
+    if (!window.confirm(`Hapus anggota "${member.nama}" (${member.nomor_anggota || '-'})?`)) return
+    try {
+      const res = await deleteAdminMember(member.id)
+      setFeedback({ type: 'success', message: res.message || 'Anggota berhasil dihapus.' })
+      loadMembers()
+    } catch (err) {
+      setFeedback({ type: 'error', message: err.message || 'Gagal menghapus anggota.' })
+    }
+  }
+
+  /* ==========================================================================
+     BORROWING & RETURN ACTIONS
+     ========================================================================== */
+
+  function handleOpenBorrowingModal() {
+    setModalType('borrowing')
+    setSelectedItem(null)
+    setBorrowingForm({
+      member_id: members[0]?.id || '',
+      book_id: books.find((b) => b.stok > 0)?.id || books[0]?.id || '',
+      tanggal_pinjam: new Date().toISOString().split('T')[0],
+    })
+  }
+
+  async function handleSaveBorrowing(e) {
+    e.preventDefault()
+    setModalSubmitting(true)
+    try {
+      const res = await createAdminBorrowing({
+        member_id: Number(borrowingForm.member_id),
+        book_id: Number(borrowingForm.book_id),
+        tanggal_pinjam: borrowingForm.tanggal_pinjam,
+      })
+      setFeedback({ type: 'success', message: res.message || 'Peminjaman berhasil dicatat.' })
+      setModalType(null)
+      loadBorrowings()
+    } catch (err) {
+      setFeedback({ type: 'error', message: err.message || 'Gagal mencatat peminjaman.' })
+    } finally {
+      setModalSubmitting(false)
+    }
+  }
+
+  function handleOpenReturnModal(borrowing) {
+    setModalType('return')
+    setSelectedItem(borrowing)
+    setReturnDate(new Date().toISOString().split('T')[0])
+  }
+
+  async function handleProcessReturn(e) {
+    e.preventDefault()
+    if (!selectedItem) return
+    setModalSubmitting(true)
+    try {
+      const res = await returnAdminBorrowing(selectedItem.id, returnDate)
+      setFeedback({ type: 'success', message: res.message || 'Pengembalian buku berhasil diproses.' })
+      setModalType(null)
+      loadBorrowings()
+    } catch (err) {
+      setFeedback({ type: 'error', message: err.message || 'Gagal memproses pengembalian buku.' })
+    } finally {
+      setModalSubmitting(false)
+    }
+  }
+
+  /* ==========================================================================
+     PDF REPORT DOWNLOAD
+     ========================================================================== */
+
+  async function handleDownloadPdf() {
+    try {
+      setLoading(true)
+      await downloadBorrowingReportPdf(reportFilter)
+      setFeedback({ type: 'success', message: 'Laporan PDF berhasil diunduh.' })
+    } catch (err) {
+      setFeedback({ type: 'error', message: err.message || 'Gagal mengunduh laporan PDF.' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  /* ==========================================================================
+     FILTERED LISTS
+     ========================================================================== */
+
+  const filteredBooks = books.filter((book) => {
+    const matchSearch =
+      book.judul.toLowerCase().includes(bookSearch.toLowerCase()) ||
+      book.penulis.toLowerCase().includes(bookSearch.toLowerCase()) ||
+      (book.isbn && book.isbn.includes(bookSearch))
+    const matchCategory =
+      !bookCategoryFilter ||
+      String(book.category_id || (book.category && book.category.id)) === String(bookCategoryFilter)
+    return matchSearch && matchCategory
+  })
+
+  const filteredMembers = members.filter((m) => {
+    return (
+      m.nama.toLowerCase().includes(memberSearch.toLowerCase()) ||
+      (m.nomor_anggota && m.nomor_anggota.toLowerCase().includes(memberSearch.toLowerCase())) ||
+      (m.kelas && m.kelas.toLowerCase().includes(memberSearch.toLowerCase()))
+    )
+  })
+
+  return (
+    <div className="admin-shell" aria-label="Panel Administrasi Perpustakaan RuangDegup">
+      {/* ADMIN TOP NAV */}
+      <div className="admin-topbar">
+        <div className="admin-topbar__inner">
+          <div className="admin-topbar__left">
+            <span className="brand-mark admin-brand-mark">r.</span>
+            <div>
+              <h1 className="admin-brand-title">Admin Panel Perpustakaan</h1>
+              <p className="admin-brand-subtitle">SMKN 6 Surakarta &bull; RuangDegup</p>
+            </div>
+          </div>
+
+          <div className="admin-topbar__right">
+            <span className="admin-user-pill">
+              Petugas: <strong>{currentUser?.name || 'Administrator'}</strong>
+            </span>
+            <Button variant="outline" size="sm" onClick={onExitAdmin}>
+              Keluar ke Beranda
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* FEEDBACK ALERT */}
+      {feedback.message && (
+        <div className="page-container admin-alert-container">
+          <aside
+            className={`admin-alert ${
+              feedback.type === 'error' ? 'admin-alert--error' : 'admin-alert--success'
+            }`}
+            role="status"
+          >
+            <span className="admin-alert__icon">
+              {feedback.type === 'error' ? (
+                <AlertCircleIcon size={20} />
+              ) : (
+                <CheckCircleIcon size={20} />
+              )}
+            </span>
+            <div className="admin-alert__content">
+              <p>{feedback.message}</p>
+            </div>
+            <button
+              type="button"
+              className="admin-alert__close"
+              onClick={() => setFeedback({ type: '', message: '' })}
+              aria-label="Tutup pemberitahuan"
+            >
+              &times;
+            </button>
+          </aside>
+        </div>
+      )}
+
+      {/* MAIN CONTAINER */}
+      <div className="page-container admin-body">
+        {/* TABS NAVIGATION */}
+        <nav className="admin-nav-tabs" aria-label="Navigasi Menu Admin">
+          <button
+            type="button"
+            className={`admin-tab-btn ${activeTab === 'dashboard' ? 'is-active' : ''}`}
+            onClick={() => setActiveTab('dashboard')}
+          >
+            <ClockIcon size={16} />
+            <span>Ringkasan</span>
+          </button>
+          <button
+            type="button"
+            className={`admin-tab-btn ${activeTab === 'books' ? 'is-active' : ''}`}
+            onClick={() => setActiveTab('books')}
+          >
+            <BookOpenIcon size={16} />
+            <span>Koleksi Buku</span>
+          </button>
+          <button
+            type="button"
+            className={`admin-tab-btn ${activeTab === 'categories' ? 'is-active' : ''}`}
+            onClick={() => setActiveTab('categories')}
+          >
+            <TagIcon size={16} />
+            <span>Kategori</span>
+          </button>
+          <button
+            type="button"
+            className={`admin-tab-btn ${activeTab === 'members' ? 'is-active' : ''}`}
+            onClick={() => setActiveTab('members')}
+          >
+            <UsersIcon size={16} />
+            <span>Anggota Siswa</span>
+          </button>
+          <button
+            type="button"
+            className={`admin-tab-btn ${activeTab === 'borrowings' ? 'is-active' : ''}`}
+            onClick={() => setActiveTab('borrowings')}
+          >
+            <RefreshIcon size={16} />
+            <span>Peminjaman</span>
+          </button>
+          <button
+            type="button"
+            className={`admin-tab-btn ${activeTab === 'reports' ? 'is-active' : ''}`}
+            onClick={() => setActiveTab('reports')}
+          >
+            <FileTextIcon size={16} />
+            <span>Laporan PDF</span>
+          </button>
+        </nav>
+
+        {/* TAB 1: DASHBOARD RINGKASAN */}
+        {activeTab === 'dashboard' && (
+          <section className="admin-view-section" aria-label="Ringkasan Statistik">
+            <div className="admin-section-header">
+              <div>
+                <h2 className="admin-section-title">Ringkasan Sistem Perpustakaan</h2>
+                <p className="admin-section-desc">
+                  Statistik sirkulasi buku, ketersediaan stok, dan anggota aktif saat ini.
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={<RefreshIcon size={16} />}
+                onClick={loadDashboardData}
+              >
+                Segarkan Data
+              </Button>
+            </div>
+
+            <div className="admin-metrics-grid">
+              <div className="admin-metric-card">
+                <span className="admin-metric-card__label">Total Koleksi Judul</span>
+                <span className="admin-metric-card__value">
+                  {dashboardStats?.total_buku ?? '-'}
+                </span>
+                <span className="admin-metric-card__sub">Judul buku terdaftar</span>
+              </div>
+              <div className="admin-metric-card">
+                <span className="admin-metric-card__label">Total Stok Eksemplar</span>
+                <span className="admin-metric-card__value">
+                  {dashboardStats?.total_stok ?? '-'}
+                </span>
+                <span className="admin-metric-card__sub">Fisik buku di perpustakaan</span>
+              </div>
+              <div className="admin-metric-card">
+                <span className="admin-metric-card__label">Kategori Koleksi</span>
+                <span className="admin-metric-card__value">
+                  {dashboardStats?.total_kategori ?? '-'}
+                </span>
+                <span className="admin-metric-card__sub">Klasifikasi rak buku</span>
+              </div>
+              <div className="admin-metric-card">
+                <span className="admin-metric-card__label">Anggota Siswa</span>
+                <span className="admin-metric-card__value">
+                  {dashboardStats?.total_anggota ?? '-'}
+                </span>
+                <span className="admin-metric-card__sub">Siswa SMKN 6 Surakarta</span>
+              </div>
+              <div className="admin-metric-card">
+                <span className="admin-metric-card__label">Sedang Dipinjam</span>
+                <span className="admin-metric-card__value admin-metric-card__value--plum">
+                  {dashboardStats?.sedang_dipinjam ?? '-'}
+                </span>
+                <span className="admin-metric-card__sub">Buku di tangan anggota</span>
+              </div>
+              <div className="admin-metric-card">
+                <span className="admin-metric-card__label">Telah Dikembalikan</span>
+                <span className="admin-metric-card__value admin-metric-card__value--green">
+                  {dashboardStats?.sudah_dikembalikan ?? '-'}
+                </span>
+                <span className="admin-metric-card__sub">Riwayat selesai transaksi</span>
+              </div>
+              <div className="admin-metric-card admin-metric-card--alert">
+                <span className="admin-metric-card__label">Peminjaman Terlambat</span>
+                <span className="admin-metric-card__value admin-metric-card__value--red">
+                  {dashboardStats?.terlambat ?? '-'}
+                </span>
+                <span className="admin-metric-card__sub">Melewati batas 7 hari</span>
+              </div>
+            </div>
+
+            {/* QUICK ACTIONS BANNER */}
+            <div className="admin-quick-actions">
+              <h3 className="admin-quick-actions__title">Aksi Cepat Sirkulasi</h3>
+              <div className="admin-quick-actions__grid">
+                <button
+                  type="button"
+                  className="quick-action-card"
+                  onClick={() => {
+                    setActiveTab('borrowings')
+                    handleOpenBorrowingModal()
+                  }}
+                >
+                  <PlusIcon size={20} />
+                  <span>Catat Peminjaman Baru</span>
+                </button>
+                <button
+                  type="button"
+                  className="quick-action-card"
+                  onClick={() => {
+                    setActiveTab('books')
+                    handleOpenBookModal('create')
+                  }}
+                >
+                  <BookOpenIcon size={20} />
+                  <span>Tambah Buku Baru</span>
+                </button>
+                <button
+                  type="button"
+                  className="quick-action-card"
+                  onClick={() => {
+                    setActiveTab('members')
+                    handleOpenMemberModal('create')
+                  }}
+                >
+                  <UsersIcon size={20} />
+                  <span>Daftarkan Siswa</span>
+                </button>
+                <button
+                  type="button"
+                  className="quick-action-card"
+                  onClick={() => setActiveTab('reports')}
+                >
+                  <DownloadIcon size={20} />
+                  <span>Cetak Laporan PDF</span>
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* TAB 2: KOLEKSI BUKU (CRUD) */}
+        {activeTab === 'books' && (
+          <section className="admin-view-section" aria-label="Kelola Koleksi Buku">
+            <div className="admin-section-header">
+              <div>
+                <h2 className="admin-section-title">Manajemen Koleksi Buku</h2>
+                <p className="admin-section-desc">
+                  Tambah, edit metadata judul, ISBN, kategori, serta perbarui stok buku.
+                </p>
+              </div>
+              <Button
+                variant="primary"
+                size="md"
+                icon={<PlusIcon size={16} />}
+                onClick={() => handleOpenBookModal('create')}
+              >
+                Tambah Buku Baru
+              </Button>
+            </div>
+
+            {/* SEARCH & CATEGORY FILTER */}
+            <div className="admin-filter-bar">
+              <div className="admin-search-wrapper">
+                <SearchIcon size={18} className="search-icon" />
+                <input
+                  type="text"
+                  placeholder="Cari berdasarkan judul, penulis, ISBN..."
+                  value={bookSearch}
+                  onChange={(e) => setBookSearch(e.target.value)}
+                  className="admin-search-input"
+                />
+              </div>
+
+              <select
+                className="admin-select"
+                value={bookCategoryFilter}
+                onChange={(e) => setBookCategoryFilter(e.target.value)}
+              >
+                <option value="">Semua Kategori ({categories.length})</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nama_kategori}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* BOOKS TABLE */}
+            <div className="admin-table-card">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Buku</th>
+                    <th>Kategori</th>
+                    <th>Penerbit & Tahun</th>
+                    <th>ISBN</th>
+                    <th>Stok</th>
+                    <th style={{ textAlign: 'right' }}>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredBooks.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="admin-table-empty">
+                        Tidak ada koleksi buku yang sesuai kriteria pencarian.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredBooks.map((b) => (
+                      <tr key={b.id}>
+                        <td>
+                          <div className="admin-book-item">
+                            {b.cover ? (
+                              <img src={b.cover} alt={b.judul} className="admin-book-item__thumb" />
+                            ) : (
+                              <div className="admin-book-item__placeholder">
+                                <BookOpenIcon size={18} />
+                              </div>
+                            )}
+                            <div>
+                              <strong className="admin-book-item__title">{b.judul}</strong>
+                              <span className="admin-book-item__author">{b.penulis}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <span className="admin-badge admin-badge--category">
+                            {b.category?.nama_kategori || 'Tanpa Kategori'}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="admin-meta-text">
+                            {b.penerbit || '-'} {b.tahun_terbit ? `(${b.tahun_terbit})` : ''}
+                          </span>
+                        </td>
+                        <td>
+                          <code className="admin-code">{b.isbn || '-'}</code>
+                        </td>
+                        <td>
+                          <span
+                            className={`admin-stock-badge ${
+                              b.stok === 0 ? 'is-out' : b.stok < 3 ? 'is-low' : ''
+                            }`}
+                          >
+                            {b.stok} eks
+                          </span>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <div className="admin-actions-group">
+                            <button
+                              type="button"
+                              className="admin-action-btn admin-action-btn--edit"
+                              onClick={() => handleOpenBookModal('edit', b)}
+                              title="Sunting data buku"
+                            >
+                              <EditIcon size={16} />
+                            </button>
+                            <button
+                              type="button"
+                              className="admin-action-btn admin-action-btn--delete"
+                              onClick={() => handleDeleteBook(b)}
+                              title="Hapus buku"
+                            >
+                              <TrashIcon size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        {/* TAB 3: KATEGORI KOLEKSI (CRUD) */}
+        {activeTab === 'categories' && (
+          <section className="admin-view-section" aria-label="Kelola Kategori">
+            <div className="admin-section-header">
+              <div>
+                <h2 className="admin-section-title">Kategori Buku</h2>
+                <p className="admin-section-desc">
+                  Kelola klasifikasi topik dan rak koleksi perpustakaan SMKN 6 Surakarta.
+                </p>
+              </div>
+              <Button
+                variant="primary"
+                size="md"
+                icon={<PlusIcon size={16} />}
+                onClick={() => handleOpenCategoryModal('create')}
+              >
+                Tambah Kategori Baru
+              </Button>
+            </div>
+
+            <div className="admin-table-card">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '80px' }}>ID</th>
+                    <th>Nama Kategori</th>
+                    <th style={{ textAlign: 'right' }}>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {categories.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} className="admin-table-empty">
+                        Belum ada kategori buku yang tersimpan.
+                      </td>
+                    </tr>
+                  ) : (
+                    categories.map((c) => (
+                      <tr key={c.id}>
+                        <td>
+                          <span className="admin-meta-text">#{c.id}</span>
+                        </td>
+                        <td>
+                          <strong className="admin-category-name">{c.nama_kategori}</strong>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <div className="admin-actions-group">
+                            <button
+                              type="button"
+                              className="admin-action-btn admin-action-btn--edit"
+                              onClick={() => handleOpenCategoryModal('edit', c)}
+                              title="Sunting kategori"
+                            >
+                              <EditIcon size={16} />
+                            </button>
+                            <button
+                              type="button"
+                              className="admin-action-btn admin-action-btn--delete"
+                              onClick={() => handleDeleteCategory(c)}
+                              title="Hapus kategori"
+                            >
+                              <TrashIcon size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        {/* TAB 4: DATA ANGGOTA (CRUD) */}
+        {activeTab === 'members' && (
+          <section className="admin-view-section" aria-label="Kelola Anggota Siswa">
+            <div className="admin-section-header">
+              <div>
+                <h2 className="admin-section-title">Data Anggota Perpustakaan</h2>
+                <p className="admin-section-desc">
+                  Daftar siswa SMKN 6 Surakarta yang memiliki hak akses sirkulasi pinjam buku.
+                </p>
+              </div>
+              <Button
+                variant="primary"
+                size="md"
+                icon={<PlusIcon size={16} />}
+                onClick={() => handleOpenMemberModal('create')}
+              >
+                Tambah Anggota Baru
+              </Button>
+            </div>
+
+            <div className="admin-filter-bar">
+              <div className="admin-search-wrapper">
+                <SearchIcon size={18} className="search-icon" />
+                <input
+                  type="text"
+                  placeholder="Cari berdasarkan nama, nomor anggota, kelas..."
+                  value={memberSearch}
+                  onChange={(e) => setMemberSearch(e.target.value)}
+                  className="admin-search-input"
+                />
+              </div>
+            </div>
+
+            <div className="admin-table-card">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>No. Anggota</th>
+                    <th>Nama Lengkap</th>
+                    <th>Tingkat & Jurusan</th>
+                    <th>Kontak (HP)</th>
+                    <th>Alamat</th>
+                    <th style={{ textAlign: 'right' }}>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredMembers.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="admin-table-empty">
+                        Tidak ada data anggota yang ditemukan.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredMembers.map((m) => (
+                      <tr key={m.id}>
+                        <td>
+                          <span className="admin-badge admin-badge--id">
+                            {m.nomor_anggota || `A${String(m.id).padStart(4, '0')}`}
+                          </span>
+                        </td>
+                        <td>
+                          <strong className="admin-member-name">{m.nama}</strong>
+                        </td>
+                        <td>
+                          <span className="admin-badge admin-badge--kelas">
+                            {m.kelas || '-'}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="admin-meta-text">{m.no_hp || '-'}</span>
+                        </td>
+                        <td>
+                          <span className="admin-meta-text">{m.alamat || '-'}</span>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <div className="admin-actions-group">
+                            <button
+                              type="button"
+                              className="admin-action-btn admin-action-btn--edit"
+                              onClick={() => handleOpenMemberModal('edit', m)}
+                              title="Sunting data anggota"
+                            >
+                              <EditIcon size={16} />
+                            </button>
+                            <button
+                              type="button"
+                              className="admin-action-btn admin-action-btn--delete"
+                              onClick={() => handleDeleteMember(m)}
+                              title="Hapus anggota"
+                            >
+                              <TrashIcon size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        {/* TAB 5: PEMINJAMAN & PENGEMBALIAN */}
+        {activeTab === 'borrowings' && (
+          <section className="admin-view-section" aria-label="Kelola Transaksi Peminjaman">
+            <div className="admin-section-header">
+              <div>
+                <h2 className="admin-section-title">Sirkulasi & Peminjaman Buku</h2>
+                <p className="admin-section-desc">
+                  Catat transaksi manual peminjaman dan proses pengembalian buku siswa.
+                </p>
+              </div>
+              <Button
+                variant="primary"
+                size="md"
+                icon={<PlusIcon size={16} />}
+                onClick={handleOpenBorrowingModal}
+              >
+                Catat Peminjaman Baru
+              </Button>
+            </div>
+
+            <div className="admin-table-card">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Peminjam</th>
+                    <th>Judul Buku</th>
+                    <th>Tanggal Pinjam</th>
+                    <th>Jatuh Tempo</th>
+                    <th>Status</th>
+                    <th style={{ textAlign: 'right' }}>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {borrowings.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="admin-table-empty">
+                        Belum ada riwayat transaksi peminjaman.
+                      </td>
+                    </tr>
+                  ) : (
+                    borrowings.map((b) => (
+                      <tr key={b.id}>
+                        <td>
+                          <strong className="admin-member-name">{b.member?.nama || '-'}</strong>
+                          <span className="admin-subtext">
+                            {b.member?.nomor_anggota} &bull; {b.member?.kelas}
+                          </span>
+                        </td>
+                        <td>
+                          <strong className="admin-book-item__title">{b.book?.judul || '-'}</strong>
+                          <span className="admin-subtext">{b.book?.penulis}</span>
+                        </td>
+                        <td>
+                          <span className="admin-meta-text">
+                            {b.tanggal_pinjam ? String(b.tanggal_pinjam).split('T')[0] : '-'}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="admin-meta-text">
+                            {b.jatuh_tempo ? String(b.jatuh_tempo).split('T')[0] : '-'}
+                          </span>
+                        </td>
+                        <td>
+                          <span
+                            className={`admin-status-badge ${
+                              b.status === 'dipinjam' ? 'is-borrowed' : 'is-returned'
+                            }`}
+                          >
+                            {b.status === 'dipinjam' ? 'Sedang Dipinjam' : 'Dikembalikan'}
+                          </span>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          {b.status === 'dipinjam' ? (
+                            <Button
+                              variant="sage"
+                              size="sm"
+                              onClick={() => handleOpenReturnModal(b)}
+                            >
+                              Kembalikan
+                            </Button>
+                          ) : (
+                            <span className="admin-meta-text is-muted">
+                              Kembali: {b.tanggal_kembali ? String(b.tanggal_kembali).split('T')[0] : '-'}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        {/* TAB 6: LAPORAN PEMINJAMAN & CETAK PDF */}
+        {activeTab === 'reports' && (
+          <section className="admin-view-section" aria-label="Laporan Transaksi & Cetak PDF">
+            <div className="admin-section-header">
+              <div>
+                <h2 className="admin-section-title">Laporan Peminjaman Koleksi</h2>
+                <p className="admin-section-desc">
+                  Rekapitulasi sirkulasi dan unduh berkas resmi PDF berformat A4 Landscape.
+                </p>
+              </div>
+              <Button
+                variant="primary"
+                size="md"
+                icon={<DownloadIcon size={16} />}
+                disabled={loading}
+                onClick={handleDownloadPdf}
+              >
+                {loading ? 'Mengunduh...' : 'Unduh Laporan PDF'}
+              </Button>
+            </div>
+
+            {/* FILTER STATUS */}
+            <div className="admin-filter-bar">
+              <div className="admin-tab-group">
+                <button
+                  type="button"
+                  className={`admin-pill-btn ${reportFilter === '' ? 'is-active' : ''}`}
+                  onClick={() => setReportFilter('')}
+                >
+                  Semua Riwayat
+                </button>
+                <button
+                  type="button"
+                  className={`admin-pill-btn ${reportFilter === 'dipinjam' ? 'is-active' : ''}`}
+                  onClick={() => setReportFilter('dipinjam')}
+                >
+                  Sedang Dipinjam
+                </button>
+                <button
+                  type="button"
+                  className={`admin-pill-btn ${reportFilter === 'dikembalikan' ? 'is-active' : ''}`}
+                  onClick={() => setReportFilter('dikembalikan')}
+                >
+                  Telah Dikembalikan
+                </button>
+              </div>
+            </div>
+
+            <div className="admin-table-card">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Peminjam & NIS</th>
+                    <th>Judul Buku</th>
+                    <th>Tgl Pinjam</th>
+                    <th>Jatuh Tempo</th>
+                    <th>Status Tampilan</th>
+                    <th>Keterangan</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reports.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="admin-table-empty">
+                        Tidak ada catatan laporan pada kategori filter ini.
+                      </td>
+                    </tr>
+                  ) : (
+                    reports.map((r) => (
+                      <tr key={r.id}>
+                        <td>
+                          <strong>{r.member?.nama || '-'}</strong>
+                          <span className="admin-subtext">{r.member?.nomor_anggota}</span>
+                        </td>
+                        <td>
+                          <strong>{r.book?.judul || '-'}</strong>
+                          <span className="admin-subtext">{r.book?.penulis}</span>
+                        </td>
+                        <td>
+                          <span className="admin-meta-text">
+                            {r.tanggal_pinjam ? String(r.tanggal_pinjam).split('T')[0] : '-'}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="admin-meta-text">
+                            {r.jatuh_tempo ? String(r.jatuh_tempo).split('T')[0] : '-'}
+                          </span>
+                        </td>
+                        <td>
+                          <span
+                            className={`admin-status-badge ${
+                              r.status_tampilan === 'Terlambat'
+                                ? 'is-overdue'
+                                : r.status_tampilan === 'Jatuh Tempo'
+                                ? 'is-due'
+                                : r.status_tampilan === 'Dipinjam'
+                                ? 'is-borrowed'
+                                : 'is-returned'
+                            }`}
+                          >
+                            {r.status_tampilan || r.status}
+                          </span>
+                        </td>
+                        <td>
+                          {r.terlambat_hari > 0 ? (
+                            <span className="admin-badge admin-badge--overdue">
+                              Terlambat {r.terlambat_hari} hari
+                            </span>
+                          ) : (
+                            <span className="admin-meta-text">-</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+      </div>
+
+      {/* ==========================================================================
+          MODALS
+          ========================================================================== */}
+
+      {/* MODAL KATEGORI */}
+      {modalType === 'category' && (
+        <div className="admin-modal-overlay" role="dialog" aria-modal="true">
+          <div className="admin-modal-card">
+            <div className="admin-modal-header">
+              <h3 className="admin-modal-title">
+                {modalMode === 'create' ? 'Tambah Kategori Baru' : 'Sunting Kategori'}
+              </h3>
+              <button
+                type="button"
+                className="admin-modal-close"
+                onClick={() => setModalType(null)}
+                aria-label="Tutup modal"
+              >
+                <CloseIcon size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveCategory} className="admin-modal-form">
+              <div className="form-group">
+                <label className="form-label" htmlFor="cat-name">
+                  Nama Kategori <span className="req">*</span>
+                </label>
+                <input
+                  id="cat-name"
+                  type="text"
+                  required
+                  placeholder="Contoh: Rekayasa Perangkat Lunak, Fiksi, dsb"
+                  className="form-input"
+                  value={categoryForm.nama_kategori}
+                  onChange={(e) => setCategoryForm({ nama_kategori: e.target.value })}
+                  disabled={modalSubmitting}
+                />
+              </div>
+
+              <div className="admin-modal-actions">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="md"
+                  onClick={() => setModalType(null)}
+                  disabled={modalSubmitting}
+                >
+                  Batal
+                </Button>
+                <Button type="submit" variant="primary" size="md" disabled={modalSubmitting}>
+                  {modalSubmitting ? 'Menyimpan...' : 'Simpan Kategori'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL BUKU */}
+      {modalType === 'book' && (
+        <div className="admin-modal-overlay" role="dialog" aria-modal="true">
+          <div className="admin-modal-card admin-modal-card--lg">
+            <div className="admin-modal-header">
+              <h3 className="admin-modal-title">
+                {modalMode === 'create' ? 'Tambah Koleksi Buku' : 'Sunting Data Buku'}
+              </h3>
+              <button
+                type="button"
+                className="admin-modal-close"
+                onClick={() => setModalType(null)}
+                aria-label="Tutup modal"
+              >
+                <CloseIcon size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveBook} className="admin-modal-form">
+              <div className="form-group">
+                <label className="form-label" htmlFor="book-title">
+                  Judul Buku <span className="req">*</span>
+                </label>
+                <input
+                  id="book-title"
+                  type="text"
+                  required
+                  placeholder="Masukkan judul buku..."
+                  className="form-input"
+                  value={bookForm.judul}
+                  onChange={(e) => setBookForm({ ...bookForm, judul: e.target.value })}
+                  disabled={modalSubmitting}
+                />
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label" htmlFor="book-cat">
+                    Kategori Koleksi <span className="req">*</span>
+                  </label>
+                  <select
+                    id="book-cat"
+                    required
+                    className="form-select"
+                    value={bookForm.category_id}
+                    onChange={(e) => setBookForm({ ...bookForm, category_id: e.target.value })}
+                    disabled={modalSubmitting}
+                  >
+                    <option value="" disabled>
+                      Pilih Kategori
+                    </option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.nama_kategori}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" htmlFor="book-author">
+                    Penulis / Pengarang <span className="req">*</span>
+                  </label>
+                  <input
+                    id="book-author"
+                    type="text"
+                    required
+                    placeholder="Nama penulis..."
+                    className="form-input"
+                    value={bookForm.penulis}
+                    onChange={(e) => setBookForm({ ...bookForm, penulis: e.target.value })}
+                    disabled={modalSubmitting}
+                  />
+                </div>
+              </div>
+
+              <div className="form-row form-row--3">
+                <div className="form-group">
+                  <label className="form-label" htmlFor="book-publisher">
+                    Penerbit
+                  </label>
+                  <input
+                    id="book-publisher"
+                    type="text"
+                    placeholder="Nama penerbit..."
+                    className="form-input"
+                    value={bookForm.penerbit}
+                    onChange={(e) => setBookForm({ ...bookForm, penerbit: e.target.value })}
+                    disabled={modalSubmitting}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" htmlFor="book-year">
+                    Tahun Terbit
+                  </label>
+                  <input
+                    id="book-year"
+                    type="number"
+                    min={1000}
+                    max={new Date().getFullYear()}
+                    placeholder="YYYY"
+                    className="form-input"
+                    value={bookForm.tahun_terbit}
+                    onChange={(e) => setBookForm({ ...bookForm, tahun_terbit: e.target.value })}
+                    disabled={modalSubmitting}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" htmlFor="book-isbn">
+                    ISBN
+                  </label>
+                  <input
+                    id="book-isbn"
+                    type="text"
+                    placeholder="978-..."
+                    className="form-input"
+                    value={bookForm.isbn}
+                    onChange={(e) => setBookForm({ ...bookForm, isbn: e.target.value })}
+                    disabled={modalSubmitting}
+                  />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label" htmlFor="book-stock">
+                    Jumlah Stok Fisik <span className="req">*</span>
+                  </label>
+                  <input
+                    id="book-stock"
+                    type="number"
+                    min={0}
+                    required
+                    className="form-input"
+                    value={bookForm.stok}
+                    onChange={(e) => setBookForm({ ...bookForm, stok: e.target.value })}
+                    disabled={modalSubmitting}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" htmlFor="book-cover">
+                    URL Sampul / Cover
+                  </label>
+                  <input
+                    id="book-cover"
+                    type="url"
+                    placeholder="https://... (opsional)"
+                    className="form-input"
+                    value={bookForm.cover}
+                    onChange={(e) => setBookForm({ ...bookForm, cover: e.target.value })}
+                    disabled={modalSubmitting}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="book-desc">
+                  Sinopsis / Deskripsi
+                </label>
+                <textarea
+                  id="book-desc"
+                  rows={3}
+                  placeholder="Ringkasan isi buku..."
+                  className="form-textarea"
+                  value={bookForm.deskripsi}
+                  onChange={(e) => setBookForm({ ...bookForm, deskripsi: e.target.value })}
+                  disabled={modalSubmitting}
+                />
+              </div>
+
+              <div className="admin-modal-actions">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="md"
+                  onClick={() => setModalType(null)}
+                  disabled={modalSubmitting}
+                >
+                  Batal
+                </Button>
+                <Button type="submit" variant="primary" size="md" disabled={modalSubmitting}>
+                  {modalSubmitting ? 'Menyimpan...' : 'Simpan Data Buku'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL ANGGOTA */}
+      {modalType === 'member' && (
+        <div className="admin-modal-overlay" role="dialog" aria-modal="true">
+          <div className="admin-modal-card">
+            <div className="admin-modal-header">
+              <h3 className="admin-modal-title">
+                {modalMode === 'create' ? 'Tambah Anggota Siswa' : 'Sunting Data Anggota'}
+              </h3>
+              <button
+                type="button"
+                className="admin-modal-close"
+                onClick={() => setModalType(null)}
+                aria-label="Tutup modal"
+              >
+                <CloseIcon size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveMember} className="admin-modal-form">
+              <div className="form-group">
+                <label className="form-label" htmlFor="member-name">
+                  Nama Lengkap Siswa <span className="req">*</span>
+                </label>
+                <input
+                  id="member-name"
+                  type="text"
+                  required
+                  placeholder="Nama siswa..."
+                  className="form-input"
+                  value={memberForm.nama}
+                  onChange={(e) => setMemberForm({ ...memberForm, nama: e.target.value })}
+                  disabled={modalSubmitting}
+                />
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label" htmlFor="member-tingkat">
+                    Tingkat Kelas <span className="req">*</span>
+                  </label>
+                  <select
+                    id="member-tingkat"
+                    required
+                    className="form-select"
+                    value={memberForm.tingkat}
+                    onChange={(e) => setMemberForm({ ...memberForm, tingkat: e.target.value })}
+                    disabled={modalSubmitting}
+                  >
+                    <option value="X">Kelas X</option>
+                    <option value="XI">Kelas XI</option>
+                    <option value="XII">Kelas XII</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" htmlFor="member-jurusan">
+                    Jurusan SMKN 6 Surakarta <span className="req">*</span>
+                  </label>
+                  <select
+                    id="member-jurusan"
+                    required
+                    className="form-select"
+                    value={memberForm.jurusan}
+                    onChange={(e) => setMemberForm({ ...memberForm, jurusan: e.target.value })}
+                    disabled={modalSubmitting}
+                  >
+                    {SMKN6_JURUSAN.map((j) => (
+                      <option key={j.kode} value={j.kode}>
+                        {j.kode} — {j.nama}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label" htmlFor="member-phone">
+                    Nomor WhatsApp / HP
+                  </label>
+                  <input
+                    id="member-phone"
+                    type="tel"
+                    placeholder="08..."
+                    className="form-input"
+                    value={memberForm.no_hp}
+                    onChange={(e) => setMemberForm({ ...memberForm, no_hp: e.target.value })}
+                    disabled={modalSubmitting}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" htmlFor="member-reg-date">
+                    Tanggal Terdaftar
+                  </label>
+                  <input
+                    id="member-reg-date"
+                    type="date"
+                    className="form-input"
+                    value={memberForm.tanggal_daftar}
+                    onChange={(e) => setMemberForm({ ...memberForm, tanggal_daftar: e.target.value })}
+                    disabled={modalSubmitting}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="member-addr">
+                  Alamat Rumah
+                </label>
+                <textarea
+                  id="member-addr"
+                  rows={2}
+                  placeholder="Alamat domisili..."
+                  className="form-textarea"
+                  value={memberForm.alamat}
+                  onChange={(e) => setMemberForm({ ...memberForm, alamat: e.target.value })}
+                  disabled={modalSubmitting}
+                />
+              </div>
+
+              <div className="admin-modal-actions">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="md"
+                  onClick={() => setModalType(null)}
+                  disabled={modalSubmitting}
+                >
+                  Batal
+                </Button>
+                <Button type="submit" variant="primary" size="md" disabled={modalSubmitting}>
+                  {modalSubmitting ? 'Menyimpan...' : 'Simpan Anggota'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL PEMINJAMAN MANUAL */}
+      {modalType === 'borrowing' && (
+        <div className="admin-modal-overlay" role="dialog" aria-modal="true">
+          <div className="admin-modal-card">
+            <div className="admin-modal-header">
+              <h3 className="admin-modal-title">Catat Transaksi Peminjaman</h3>
+              <button
+                type="button"
+                className="admin-modal-close"
+                onClick={() => setModalType(null)}
+                aria-label="Tutup modal"
+              >
+                <CloseIcon size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveBorrowing} className="admin-modal-form">
+              <div className="form-group">
+                <label className="form-label" htmlFor="borrow-member">
+                  Pilih Anggota Siswa <span className="req">*</span>
+                </label>
+                <select
+                  id="borrow-member"
+                  required
+                  className="form-select"
+                  value={borrowingForm.member_id}
+                  onChange={(e) => setBorrowingForm({ ...borrowingForm, member_id: e.target.value })}
+                  disabled={modalSubmitting}
+                >
+                  <option value="" disabled>
+                    Pilih Siswa Peminjam
+                  </option>
+                  {members.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.nama} ({m.nomor_anggota || `ID #${m.id}`} - {m.kelas})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="borrow-book">
+                  Pilih Buku Yang Dipinjam <span className="req">*</span>
+                </label>
+                <select
+                  id="borrow-book"
+                  required
+                  className="form-select"
+                  value={borrowingForm.book_id}
+                  onChange={(e) => setBorrowingForm({ ...borrowingForm, book_id: e.target.value })}
+                  disabled={modalSubmitting}
+                >
+                  <option value="" disabled>
+                    Pilih Buku
+                  </option>
+                  {books.map((b) => (
+                    <option key={b.id} value={b.id} disabled={b.stok <= 0}>
+                      {b.judul} {b.stok <= 0 ? '(Stok Habis)' : `(Tersedia: ${b.stok})`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="borrow-date">
+                  Tanggal Pinjam <span className="req">*</span>
+                </label>
+                <input
+                  id="borrow-date"
+                  type="date"
+                  required
+                  max={new Date().toISOString().split('T')[0]}
+                  className="form-input"
+                  value={borrowingForm.tanggal_pinjam}
+                  onChange={(e) => setBorrowingForm({ ...borrowingForm, tanggal_pinjam: e.target.value })}
+                  disabled={modalSubmitting}
+                />
+                <span className="form-helper-text">
+                  Batas waktu pengembalian adalah 7 hari sejak tanggal pinjam.
+                </span>
+              </div>
+
+              <div className="admin-modal-actions">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="md"
+                  onClick={() => setModalType(null)}
+                  disabled={modalSubmitting}
+                >
+                  Batal
+                </Button>
+                <Button type="submit" variant="primary" size="md" disabled={modalSubmitting}>
+                  {modalSubmitting ? 'Memproses...' : 'Proses Peminjaman'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL PENGEMBALIAN BUKU */}
+      {modalType === 'return' && selectedItem && (
+        <div className="admin-modal-overlay" role="dialog" aria-modal="true">
+          <div className="admin-modal-card">
+            <div className="admin-modal-header">
+              <h3 className="admin-modal-title">Proses Pengembalian Buku</h3>
+              <button
+                type="button"
+                className="admin-modal-close"
+                onClick={() => setModalType(null)}
+                aria-label="Tutup modal"
+              >
+                <CloseIcon size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleProcessReturn} className="admin-modal-form">
+              <div className="admin-return-summary">
+                <p>
+                  Siswa: <strong>{selectedItem.member?.nama}</strong>
+                </p>
+                <p>
+                  Buku: <strong>{selectedItem.book?.judul}</strong>
+                </p>
+                <p>
+                  Tanggal Pinjam: <strong>{String(selectedItem.tanggal_pinjam).split('T')[0]}</strong>
+                </p>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="return-date">
+                  Tanggal Pengembalian Fisik <span className="req">*</span>
+                </label>
+                <input
+                  id="return-date"
+                  type="date"
+                  required
+                  min={String(selectedItem.tanggal_pinjam).split('T')[0]}
+                  max={new Date().toISOString().split('T')[0]}
+                  className="form-input"
+                  value={returnDate}
+                  onChange={(e) => setReturnDate(e.target.value)}
+                  disabled={modalSubmitting}
+                />
+                <span className="form-helper-text">
+                  Stok buku di perpustakaan akan bertambah kembali secara otomatis.
+                </span>
+              </div>
+
+              <div className="admin-modal-actions">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="md"
+                  onClick={() => setModalType(null)}
+                  disabled={modalSubmitting}
+                >
+                  Batal
+                </Button>
+                <Button type="submit" variant="primary" size="md" disabled={modalSubmitting}>
+                  {modalSubmitting ? 'Memproses...' : 'Konfirmasi Pengembalian'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
