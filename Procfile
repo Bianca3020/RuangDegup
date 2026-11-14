@@ -1,1 +1,1 @@
-web: php artisan config:clear && php artisan route:clear && php artisan view:clear && php artisan migrate --force && php artisan storage:link && heroku-php-apache2 public/
+web: php artisan config:clear && php artisan route:clear && php artisan view:clear && php artisan migrate --force && php artisan storage:link && php -d upload_max_filesize=10M -d post_max_size=15M artisan serve --host 0.0.0.0 --port ${PORT:-8080}

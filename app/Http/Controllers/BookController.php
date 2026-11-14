@@ -54,7 +54,7 @@ class BookController extends Controller
         ];
 
         if ($request->hasFile('cover')) {
-            $rules['cover'] = 'required|image|mimes:jpeg,png,jpg,webp|max:10240';
+            $rules['cover'] = 'required|image|mimes:jpeg,png,jpg,webp,gif|max:10240';
         } else {
             $rules['cover'] = 'nullable';
         }
@@ -66,7 +66,7 @@ class BookController extends Controller
             'stok.required' => 'Jumlah stok fisik wajib diisi.',
             'stok.numeric' => 'Jumlah stok fisik harus berupa angka.',
             'stok.min' => 'Jumlah stok fisik minimal 0.',
-            'cover.image' => 'Berkas sampul harus berupa gambar (JPG, JPEG, PNG, atau WEBP).',
+            'cover.image' => 'Berkas sampul harus berupa gambar (JPG, JPEG, PNG, WEBP, atau GIF).',
             'cover.max' => 'Ukuran berkas sampul tidak boleh melebihi 10 MB.',
         ];
 
@@ -113,7 +113,7 @@ class BookController extends Controller
         ];
 
         if ($request->hasFile('cover')) {
-            $rules['cover'] = 'required|image|mimes:jpeg,png,jpg,webp|max:10240';
+            $rules['cover'] = 'required|image|mimes:jpeg,png,jpg,webp,gif|max:10240';
         } else {
             $rules['cover'] = 'nullable';
         }
@@ -125,7 +125,7 @@ class BookController extends Controller
             'stok.required' => 'Jumlah stok fisik wajib diisi.',
             'stok.numeric' => 'Jumlah stok fisik harus berupa angka.',
             'stok.min' => 'Jumlah stok fisik minimal 0.',
-            'cover.image' => 'Berkas sampul harus berupa gambar (JPG, JPEG, PNG, atau WEBP).',
+            'cover.image' => 'Berkas sampul harus berupa gambar (JPG, JPEG, PNG, WEBP, atau GIF).',
             'cover.max' => 'Ukuran berkas sampul tidak boleh melebihi 10 MB.',
         ];
 

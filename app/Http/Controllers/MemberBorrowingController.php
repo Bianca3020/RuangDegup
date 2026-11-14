@@ -58,8 +58,9 @@ class MemberBorrowingController extends Controller
         return response()->json($borrowings);
     }
 
-    public function destroy(Request $request, int $id)
+    public function destroy(Request $request, $id)
     {
+        $id = (int) $id;
         $member = $request->user()->member;
 
         if (!$member) {
@@ -92,9 +93,9 @@ class MemberBorrowingController extends Controller
         return response()->json(['message' => 'Buku berhasil dikembalikan']);
     }
 
-    public function returnBook(Request $request, int $id)
+    public function returnBook(Request $request, $id)
     {
-        return $this->destroy($request, $id);
+        return $this->destroy($request, (int) $id);
     }
 
     public function store(Request $request)
