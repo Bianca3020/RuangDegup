@@ -36,8 +36,7 @@ Route::middleware(['auth:sanctum', 'member'])->group(function () {
 
     Route::get('/member/borrowings', [MemberBorrowingController::class, 'index']);
     Route::post('/member/borrowings', [MemberBorrowingController::class, 'store']);
-    Route::post('/member/borrowings/{id}/return', [MemberBorrowingController::class, 'returnBook']);
-    Route::put('/member/borrowings/{id}/return', [MemberBorrowingController::class, 'returnBook']);
+    Route::match(['get', 'post', 'put', 'patch'], '/member/borrowings/{id}/return', [MemberBorrowingController::class, 'returnBook']);
     Route::delete('/member/borrowings/{id}', [MemberBorrowingController::class, 'destroy']);
 
     Route::get('/member/favorites', [FavoriteController::class, 'index']);
@@ -58,7 +57,7 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
 
     Route::apiResource('categories', CategoryController::class);
     Route::apiResource('books', BookController::class);
-    Route::post('/books/{book}', [BookController::class, 'update']);
+    Route::match(['post', 'put', 'patch'], '/books/{book}', [BookController::class, 'update']);
     Route::apiResource('members', MemberController::class);
     Route::apiResource('borrowings', BorrowingController::class);
 });

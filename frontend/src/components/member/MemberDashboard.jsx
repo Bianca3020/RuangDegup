@@ -52,7 +52,6 @@ export function MemberDashboard({
     loadDashboard()
   }, [loadDashboard])
 
-  // Remove a favorite directly from the dashboard
   async function handleRemoveFavorite(bookId, bookTitle) {
     try {
       await removeFavorite(bookId)
@@ -64,7 +63,6 @@ export function MemberDashboard({
     }
   }
 
-  // Delete a review with modern modal confirmation
   function handleDeleteReview(reviewId, bookTitle) {
     setConfirmDialog({
       title: 'Hapus Ulasan Buku',
@@ -80,7 +78,6 @@ export function MemberDashboard({
     })
   }
 
-  // Return a borrowed book with modern modal confirmation
   function handleReturnBook(borrowingId, bookTitle) {
     setConfirmError('')
     setConfirmDialog({

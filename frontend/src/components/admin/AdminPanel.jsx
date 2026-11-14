@@ -325,9 +325,9 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
     const file = e.target.files && e.target.files[0]
     if (!file) return
 
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg']
-    if (!allowedTypes.includes(file.type)) {
-      setBookModalError('Format berkas sampul harus berupa gambar JPG, JPEG, PNG, atau WEBP.')
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg', 'image/jfif', 'image/gif']
+    if (file.type && !allowedTypes.includes(file.type.toLowerCase())) {
+      setBookModalError('Format berkas sampul harus berupa gambar JPG, JPEG, PNG, WEBP, atau GIF.')
       e.target.value = ''
       return
     }
