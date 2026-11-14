@@ -27,7 +27,22 @@ import {
 function App() {
   const [currentUser, setCurrentUser] = useState(null)
   const [notice, setNotice] = useState('')
-  const [currentView, setCurrentView] = useState('home') // 'home' | 'member-dashboard'
+  const [currentView, setCurrentView] = useState(() => {
+    const hash = window.location.hash
+    const u = getStoredUser()
+    const saved = sessionStorage.getItem('ruangdegup_current_view')
+    if ((hash === '#dashboard-admin' || hash === '#admin' || hash === '#admin-panel' || saved === 'admin-panel') && u?.role === 'admin') {
+      return 'admin-panel'
+    }
+    if ((hash === '#dashboard-member' || hash === '#ruang-anggota' || saved === 'member-dashboard') && u?.role === 'member') {
+      return 'member-dashboard'
+    }
+    if ((hash === '#profil' || saved === 'member-profile') && u?.role === 'member') {
+      return 'member-profile'
+    }
+    return 'home'
+  })
+  const [reviewRefreshKey, setReviewRefreshKey] = useState(0)
 
   // Auth Modal state
   const [authModalOpen, setAuthModalOpen] = useState(false)
@@ -54,7 +69,7 @@ function App() {
     function syncViewWithHash() {
       const hash = window.location.hash
       const u = getStoredUser()
-      if ((hash === '#dashboard-admin' || hash === '#admin') && u?.role === 'admin') {
+      if ((hash === '#dashboard-admin' || hash === '#admin' || hash === '#admin-panel') && u?.role === 'admin') {
         setCurrentView('admin-panel')
       } else if ((hash === '#dashboard-member' || hash === '#ruang-anggota') && u?.role === 'member') {
         setCurrentView('member-dashboard')
@@ -67,6 +82,29 @@ function App() {
     window.addEventListener('hashchange', syncViewWithHash)
     return () => window.removeEventListener('hashchange', syncViewWithHash)
   }, [])
+
+  // Synchronize currentView with sessionStorage and hash
+  useEffect(() => {
+    sessionStorage.setItem('ruangdegup_current_view', currentView)
+    if (currentView === 'member-dashboard') {
+      if (window.location.hash !== '#ruang-anggota') {
+        window.history.replaceState(null, '', '#ruang-anggota')
+      }
+    } else if (currentView === 'member-profile') {
+      if (window.location.hash !== '#profil') {
+        window.history.replaceState(null, '', '#profil')
+      }
+    } else if (currentView === 'admin-panel') {
+      if (window.location.hash !== '#admin-panel') {
+        window.history.replaceState(null, '', '#admin-panel')
+      }
+    } else if (currentView === 'home') {
+      const specialHashes = ['#ruang-anggota', '#dashboard-member', '#profil', '#admin-panel', '#admin', '#dashboard-admin']
+      if (specialHashes.includes(window.location.hash)) {
+        window.history.replaceState(null, '', window.location.pathname)
+      }
+    }
+  }, [currentView])
 
   // Auto-dismiss notification after 6 seconds
   useEffect(() => {
@@ -113,6 +151,11 @@ function App() {
     logoutUser()
     setCurrentUser(null)
     setFavoritesList([])
+    sessionStorage.removeItem('ruangdegup_current_view')
+    const specialHashes = ['#ruang-anggota', '#dashboard-member', '#profil', '#admin-panel', '#admin', '#dashboard-admin']
+    if (specialHashes.includes(window.location.hash)) {
+      window.history.replaceState(null, '', window.location.pathname)
+    }
     setCurrentView('home')
     setNotice('Anda telah berhasil keluar dari akun.')
   }
@@ -192,6 +235,11 @@ function App() {
 
   function handleCloseModal() {
     setSelectedBook(null)
+  }
+
+  function handleReviewSubmitted(newReview) {
+    setReviewRefreshKey((prev) => prev + 1)
+    setNotice(`Ulasan Anda untuk buku "${selectedBook?.judul || 'buku'}" berhasil dikirimkan!`)
   }
 
   // Borrow book handler
@@ -373,6 +421,7 @@ function App() {
             currentUser={currentUser}
             onSelectBook={handleSelectBook}
             onExploreBooks={handleExploreClick}
+            reviewRefreshKey={reviewRefreshKey}
             onNavigateToProfile={() => {
               setCurrentView('member-profile')
               window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -454,6 +503,7 @@ function App() {
           isFavorite={isSelectedBookFavorite}
           onRequireLogin={handleRequireLogin}
           borrowLoading={borrowLoading}
+          onReviewSubmitted={handleReviewSubmitted}
         />
       )}
 

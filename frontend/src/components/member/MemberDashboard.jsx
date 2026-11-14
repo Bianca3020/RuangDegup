@@ -22,6 +22,7 @@ export function MemberDashboard({
   onSelectBook,
   onExploreBooks,
   onNavigateToProfile,
+  reviewRefreshKey = 0,
 }) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -51,6 +52,14 @@ export function MemberDashboard({
   useEffect(() => {
     loadDashboard()
   }, [loadDashboard])
+
+  // Automatically reload dashboard when a new review is submitted
+  useEffect(() => {
+    if (reviewRefreshKey > 0) {
+      loadDashboard()
+      setActionNotice('Ulasan baru berhasil dikirim dan daftar ulasan telah diperbarui.')
+    }
+  }, [reviewRefreshKey, loadDashboard])
 
   async function handleRemoveFavorite(bookId, bookTitle) {
     try {

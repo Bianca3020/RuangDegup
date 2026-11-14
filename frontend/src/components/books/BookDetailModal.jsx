@@ -20,6 +20,7 @@ export function BookDetailModal({
   isFavorite = false,
   onRequireLogin,
   borrowLoading = false,
+  onReviewSubmitted,
 }) {
   const [imgError, setImgError] = useState(false)
   const [rating, setRating] = useState(5)
@@ -84,13 +85,19 @@ export function BookDetailModal({
     setReviewSuccess('')
 
     try {
-      await createReview({
+      const res = await createReview({
         book_id: book.id,
         rating: Number(rating),
         ulasan: ulasan.trim() || null,
       })
       setReviewSuccess('Ulasan Anda berhasil dikirimkan. Terima kasih atas apresiasinya!')
       setUlasan('')
+      if (onReviewSubmitted) {
+        onReviewSubmitted(res?.data || res)
+      }
+      setTimeout(() => {
+        if (onClose) onClose()
+      }, 1000)
     } catch (err) {
       setReviewError(
         err.message || 'Gagal mengirimkan review. Pastikan Anda belum pernah mereview buku ini.'

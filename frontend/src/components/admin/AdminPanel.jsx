@@ -1457,16 +1457,16 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
               <Button
                 variant="primary"
                 size="md"
+                icon={<PlusIcon size={16} />}
                 onClick={() => handleOpenQuoteModal('create')}
               >
-                <PlusIcon size={16} />
-                <span>Tambah Kutipan Baru</span>
+                Tambah Kutipan Baru
               </Button>
             </div>
 
             <div className="admin-filter-bar">
-              <div className="admin-search-box">
-                <SearchIcon size={16} />
+              <div className="admin-search-wrapper">
+                <SearchIcon size={18} className="search-icon" />
                 <input
                   type="text"
                   placeholder="Cari kutipan atau nama penulis..."
