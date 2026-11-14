@@ -12,6 +12,7 @@ use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\MemberProfileController;
 use App\Http\Controllers\MemberDashboardController;
+use App\Http\Controllers\FooterQuoteController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
@@ -21,6 +22,9 @@ Route::post('/logout', [AuthController::class, 'logout'])
     ->middleware('auth:sanctum');
 
 Route::get('/catalog', [BookController::class, 'catalog']);
+Route::get('/books/new-arrivals', [BookController::class, 'newArrivals']);
+Route::get('/footer-quotes/random', [FooterQuoteController::class, 'random']);
+Route::get('/footer-quotes', [FooterQuoteController::class, 'publicQuotes']);
 
 Route::middleware(['auth:sanctum', 'member'])->group(function () {
     Route::get('/member/dashboard', [MemberDashboardController::class, 'index']);
@@ -60,4 +64,6 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::match(['post', 'put', 'patch'], '/books/{book}', [BookController::class, 'update']);
     Route::apiResource('members', MemberController::class);
     Route::apiResource('borrowings', BorrowingController::class);
+    Route::apiResource('footer-quotes', FooterQuoteController::class);
+    Route::patch('/footer-quotes/{footerQuote}/toggle', [FooterQuoteController::class, 'toggle']);
 });

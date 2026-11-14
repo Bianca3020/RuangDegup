@@ -6,6 +6,7 @@ import { HeroCarousel } from './components/home/HeroCarousel'
 import { SearchBanner } from './components/home/SearchBanner'
 import { CategorySection } from './components/home/CategorySection'
 import { FeaturedSection } from './components/home/FeaturedSection'
+import { NewArrivalsSection } from './components/home/NewArrivalsSection'
 import { AboutSection } from './components/home/AboutSection'
 import { CtaBanner } from './components/home/CtaBanner'
 import { CatalogView } from './components/books/CatalogView'
@@ -398,6 +399,15 @@ function App() {
             <FeaturedSection
               onSelectBook={handleSelectBook}
               onBorrow={handleBorrow}
+              onGoToCatalog={handleExploreClick}
+            />
+
+            {/* SECTION: BARU MENGHIASI RAK (NEW ARRIVALS) */}
+            <NewArrivalsSection
+              onSelectBook={handleSelectBook}
+              onBorrow={handleBorrow}
+              onToggleFavorite={handleToggleFavorite}
+              favoritesList={favoritesList}
               onGoToCatalog={handleExploreClick}
             />
 

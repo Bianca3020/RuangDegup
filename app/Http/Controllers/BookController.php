@@ -40,6 +40,16 @@ class BookController extends Controller
         return response()->json($books);
     }
 
+    public function newArrivals()
+    {
+        $books = Book::with('category')
+            ->latest('created_at')
+            ->take(6)
+            ->get();
+
+        return response()->json($books);
+    }
+
     public function store(Request $request)
     {
         $rules = [

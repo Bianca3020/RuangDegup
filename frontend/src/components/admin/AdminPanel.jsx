@@ -16,6 +16,7 @@ import {
   CloseIcon,
   ImageIcon,
   CameraIcon,
+  SparklesIcon,
 } from '../common/Icons'
 import { Button } from '../common/Button'
 import {
@@ -38,6 +39,11 @@ import {
   getBorrowingReports,
   downloadBorrowingReportPdf,
   getStorageUrl,
+  getAdminFooterQuotes,
+  createAdminFooterQuote,
+  updateAdminFooterQuote,
+  toggleAdminFooterQuote,
+  deleteAdminFooterQuote,
 } from '../../services/api'
 
 // Jurusan SMKN 6 Surakarta
@@ -68,21 +74,28 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
   const [borrowings, setBorrowings] = useState([])
   const [reports, setReports] = useState([])
   const [reportFilter, setReportFilter] = useState('')
+  const [quotes, setQuotes] = useState([])
 
   // Search & Filters in Tabs
   const [bookSearch, setBookSearch] = useState('')
   const [bookCategoryFilter, setBookCategoryFilter] = useState('')
   const [memberSearch, setMemberSearch] = useState('')
+  const [quoteSearch, setQuoteSearch] = useState('')
 
   // Modals state
-  const [modalType, setModalType] = useState(null) // 'book' | 'category' | 'member' | 'borrowing' | 'return' | null
+  const [modalType, setModalType] = useState(null) // 'book' | 'category' | 'member' | 'borrowing' | 'return' | 'quote' | null
   const [modalMode, setModalMode] = useState('create') // 'create' | 'edit'
   const [selectedItem, setSelectedItem] = useState(null)
   const [modalSubmitting, setModalSubmitting] = useState(false)
-  const [deleteConfirm, setDeleteConfirm] = useState(null) // { type: 'book'|'category'|'member', item: object, submitting: boolean } | null
+  const [deleteConfirm, setDeleteConfirm] = useState(null) // { type: 'book'|'category'|'member'|'quote', item: object, submitting: boolean } | null
 
   // Form states
   const [categoryForm, setCategoryForm] = useState({ nama_kategori: '' })
+  const [quoteForm, setQuoteForm] = useState({
+    quote: '',
+    author: '',
+    is_active: true,
+  })
   const [bookForm, setBookForm] = useState({
     judul: '',
     category_id: '',
@@ -198,6 +211,15 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
     }
   }, [])
 
+  const loadQuotes = useCallback(async () => {
+    try {
+      const data = await getAdminFooterQuotes()
+      setQuotes(Array.isArray(data) ? data : [])
+    } catch (err) {
+      setFeedback({ type: 'error', message: err.message || 'Gagal memuat kutipan footer.' })
+    }
+  }, [])
+
   // Load based on active tab
   useEffect(() => {
     if (activeTab === 'dashboard') {
@@ -215,8 +237,10 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
       loadBooks()
     } else if (activeTab === 'reports') {
       loadReports(reportFilter)
+    } else if (activeTab === 'quotes') {
+      loadQuotes()
     }
-  }, [activeTab, loadDashboardData, loadBooks, loadCategories, loadMembers, loadBorrowings, loadReports, reportFilter])
+  }, [activeTab, loadDashboardData, loadBooks, loadCategories, loadMembers, loadBorrowings, loadReports, loadQuotes, reportFilter])
 
   /* ==========================================================================
      CATEGORY ACTIONS
@@ -284,6 +308,11 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
         setDeleteConfirm(null)
         loadMembers()
         loadDashboardData()
+      } else if (deleteConfirm.type === 'quote') {
+        const res = await deleteAdminFooterQuote(deleteConfirm.item.id)
+        setFeedback({ type: 'success', message: res.message || 'Kutipan footer berhasil dihapus.' })
+        setDeleteConfirm(null)
+        loadQuotes()
       }
     } catch (err) {
       setFeedback({ type: 'error', message: err.message || 'Gagal menghapus data.' })
@@ -555,8 +584,73 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
   }
 
   /* ==========================================================================
+     FOOTER QUOTE ACTIONS
+     ========================================================================== */
+
+  function handleOpenQuoteModal(mode = 'create', quote = null) {
+    setModalType('quote')
+    setModalMode(mode)
+    setSelectedItem(quote)
+    setQuoteForm({
+      quote: quote ? quote.quote : '',
+      author: quote ? quote.author : '',
+      is_active: quote ? Boolean(quote.is_active) : true,
+    })
+  }
+
+  async function handleSaveQuote(e) {
+    e.preventDefault()
+    setModalSubmitting(true)
+    try {
+      if (modalMode === 'create') {
+        const res = await createAdminFooterQuote(quoteForm)
+        setFeedback({ type: 'success', message: res.message || 'Kutipan berhasil ditambahkan.' })
+      } else {
+        const res = await updateAdminFooterQuote(selectedItem.id, quoteForm)
+        setFeedback({ type: 'success', message: res.message || 'Kutipan berhasil diperbarui.' })
+      }
+      setModalType(null)
+      loadQuotes()
+    } catch (err) {
+      setFeedback({ type: 'error', message: err.message || 'Gagal menyimpan kutipan.' })
+    } finally {
+      setModalSubmitting(false)
+    }
+  }
+
+  async function handleToggleQuote(quote) {
+    try {
+      const res = await toggleAdminFooterQuote(quote.id)
+      setFeedback({
+        type: 'success',
+        message: res.message || (res.data?.is_active ? 'Kutipan diaktifkan.' : 'Kutipan dinonaktifkan.'),
+      })
+      loadQuotes()
+    } catch (err) {
+      setFeedback({ type: 'error', message: err.message || 'Gagal mengubah status kutipan.' })
+    }
+  }
+
+  function handleDeleteQuote(quote) {
+    setDeleteConfirm({
+      type: 'quote',
+      item: quote,
+      title: 'Hapus Kutipan Editorial',
+      message: `Apakah Anda yakin ingin menghapus kutipan "${(quote.quote || '').substring(0, 50)}..." karya ${quote.author}?`,
+      submitting: false,
+    })
+  }
+
+  /* ==========================================================================
      FILTERED LISTS
      ========================================================================== */
+
+  const filteredQuotes = quotes.filter((q) => {
+    return (
+      (q.quote && q.quote.toLowerCase().includes(quoteSearch.toLowerCase())) ||
+      (q.author && q.author.toLowerCase().includes(quoteSearch.toLowerCase()))
+    )
+  })
 
   const filteredBooks = books.filter((book) => {
     const matchSearch =
@@ -688,6 +782,14 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
           >
             <FileTextIcon size={16} />
             <span>Laporan PDF</span>
+          </button>
+          <button
+            type="button"
+            className={`admin-tab-btn ${activeTab === 'quotes' ? 'is-active' : ''}`}
+            onClick={() => setActiveTab('quotes')}
+          >
+            <SparklesIcon size={16} />
+            <span>Kutipan Footer</span>
           </button>
         </nav>
 
@@ -1332,6 +1434,107 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
                           ) : (
                             <span className="admin-meta-text">-</span>
                           )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        {/* TAB 7: KUTIPAN FOOTER DYNAMIC */}
+        {activeTab === 'quotes' && (
+          <section className="admin-view-section" aria-label="Manajemen Kutipan Footer">
+            <div className="admin-section-header">
+              <div>
+                <h2 className="admin-section-title">Manajemen Kutipan Footer</h2>
+                <p className="admin-section-desc">
+                  Kelola kutipan sastra &amp; editorial yang tampil secara dinamis pada footer website publik.
+                </p>
+              </div>
+              <Button
+                variant="primary"
+                size="md"
+                onClick={() => handleOpenQuoteModal('create')}
+              >
+                <PlusIcon size={16} />
+                <span>Tambah Kutipan Baru</span>
+              </Button>
+            </div>
+
+            <div className="admin-filter-bar">
+              <div className="admin-search-box">
+                <SearchIcon size={16} />
+                <input
+                  type="text"
+                  placeholder="Cari kutipan atau nama penulis..."
+                  value={quoteSearch}
+                  onChange={(e) => setQuoteSearch(e.target.value)}
+                  className="admin-search-input"
+                />
+              </div>
+            </div>
+
+            <div className="admin-table-card">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '48px' }}>No</th>
+                    <th>Isi Kutipan</th>
+                    <th style={{ width: '180px' }}>Penulis / Sumber</th>
+                    <th style={{ width: '140px' }}>Status</th>
+                    <th style={{ width: '120px' }}>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredQuotes.length === 0 ? (
+                    <tr>
+                      <td colSpan="5" className="admin-table-empty">
+                        Belum ada kutipan editorial yang tersimpan.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredQuotes.map((q, idx) => (
+                      <tr key={q.id}>
+                        <td>{idx + 1}</td>
+                        <td className="quote-text-cell">
+                          <p className="quote-cell-content">&ldquo;{q.quote}&rdquo;</p>
+                        </td>
+                        <td>
+                          <strong>{q.author}</strong>
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            className={`status-toggle-btn ${q.is_active ? 'is-active' : 'is-inactive'}`}
+                            onClick={() => handleToggleQuote(q)}
+                            title="Klik untuk mengubah status aktif"
+                          >
+                            <span className="status-dot"></span>
+                            {q.is_active ? 'Aktif' : 'Nonaktif'}
+                          </button>
+                        </td>
+                        <td>
+                          <div className="admin-action-btns">
+                            <button
+                              type="button"
+                              className="admin-action-btn admin-action-btn--edit"
+                              onClick={() => handleOpenQuoteModal('edit', q)}
+                              title="Edit Kutipan"
+                            >
+                              <EditIcon size={15} />
+                            </button>
+                            <button
+                              type="button"
+                              className="admin-action-btn admin-action-btn--delete"
+                              onClick={() => handleDeleteQuote(q)}
+                              title="Hapus Kutipan"
+                            >
+                              <TrashIcon size={15} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -2038,6 +2241,91 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
                 </Button>
                 <Button type="submit" variant="primary" size="md" disabled={modalSubmitting}>
                   {modalSubmitting ? 'Memproses...' : 'Konfirmasi Pengembalian'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL KUTIPAN FOOTER */}
+      {modalType === 'quote' && (
+        <div className="admin-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="quote-modal-title">
+          <div className="admin-modal-card">
+            <div className="admin-modal-header">
+              <h3 className="admin-modal-title" id="quote-modal-title">
+                {modalMode === 'create' ? 'Tambah Kutipan Editorial Baru' : 'Edit Kutipan Editorial'}
+              </h3>
+              <button
+                type="button"
+                className="admin-modal-close"
+                onClick={() => setModalType(null)}
+                aria-label="Tutup Modal"
+              >
+                <CloseIcon size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveQuote} className="admin-modal-form">
+              <div className="form-group">
+                <label className="form-label" htmlFor="quote-text">
+                  Isi Kutipan Puitis <span className="req">*</span>
+                </label>
+                <textarea
+                  id="quote-text"
+                  required
+                  rows="4"
+                  className="form-input form-textarea"
+                  placeholder="Tuliskan kalimat kutipan editorial yang menginspirasi..."
+                  value={quoteForm.quote}
+                  onChange={(e) => setQuoteForm({ ...quoteForm, quote: e.target.value })}
+                  disabled={modalSubmitting}
+                />
+                <span className="form-helper-text">
+                  Kutipan ini akan dimuat secara dinamis dan bergantian di bagian footer publik website.
+                </span>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="quote-author">
+                  Penulis / Sumber Kutipan <span className="req">*</span>
+                </label>
+                <input
+                  id="quote-author"
+                  type="text"
+                  required
+                  className="form-input"
+                  placeholder="Contoh: Ruang Degup, Pramoedya Ananta Toer, Andrea Hirata, dll."
+                  value={quoteForm.author}
+                  onChange={(e) => setQuoteForm({ ...quoteForm, author: e.target.value })}
+                  disabled={modalSubmitting}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', color: 'var(--plum)' }}>
+                  <input
+                    type="checkbox"
+                    checked={quoteForm.is_active}
+                    onChange={(e) => setQuoteForm({ ...quoteForm, is_active: e.target.checked })}
+                    disabled={modalSubmitting}
+                  />
+                  <span>Kutipan Aktif (Boleh ditampilkan bergantian di footer publik)</span>
+                </label>
+              </div>
+
+              <div className="admin-modal-actions">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="md"
+                  onClick={() => setModalType(null)}
+                  disabled={modalSubmitting}
+                >
+                  Batal
+                </Button>
+                <Button type="submit" variant="primary" size="md" disabled={modalSubmitting}>
+                  {modalSubmitting ? 'Menyimpan...' : modalMode === 'create' ? 'Tambah Kutipan' : 'Simpan Perubahan'}
                 </Button>
               </div>
             </form>

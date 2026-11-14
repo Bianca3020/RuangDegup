@@ -402,3 +402,40 @@ export async function downloadBorrowingReportPdf(status = '') {
   a.remove()
   window.URL.revokeObjectURL(downloadUrl)
 }
+
+/* ==========================================================================
+   PUBLIC FOOTER QUOTES & NEW ARRIVALS
+   ========================================================================== */
+
+export async function fetchRandomQuote(excludeId = null) {
+  const query = excludeId ? `?exclude=${encodeURIComponent(excludeId)}` : ''
+  return apiRequest(`/footer-quotes/random${query}`)
+}
+
+export async function fetchNewArrivals() {
+  return apiRequest('/books/new-arrivals')
+}
+
+/* ==========================================================================
+   ADMIN FOOTER QUOTES
+   ========================================================================== */
+
+export async function getAdminFooterQuotes() {
+  return apiRequest('/footer-quotes')
+}
+
+export async function createAdminFooterQuote(data) {
+  return apiRequest('/footer-quotes', { method: 'POST', body: data })
+}
+
+export async function updateAdminFooterQuote(id, data) {
+  return apiRequest(`/footer-quotes/${id}`, { method: 'PUT', body: data })
+}
+
+export async function toggleAdminFooterQuote(id) {
+  return apiRequest(`/footer-quotes/${id}/toggle`, { method: 'PATCH' })
+}
+
+export async function deleteAdminFooterQuote(id) {
+  return apiRequest(`/footer-quotes/${id}`, { method: 'DELETE' })
+}
