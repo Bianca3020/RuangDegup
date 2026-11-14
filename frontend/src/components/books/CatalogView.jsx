@@ -404,10 +404,10 @@ export function CatalogView({
                 onChange={(e) => setSortBy(e.target.value)}
                 aria-label="Urutkan koleksi buku"
               >
-                <option value="judul-asc">Judul (A-Z)</option>
-                <option value="judul-desc">Judul (Z-A)</option>
-                <option value="stok-desc">Stok Terbanyak</option>
-                <option value="tersedia">Hanya Tersedia</option>
+                <option value="judul-asc">A–Z</option>
+                <option value="judul-desc">Z–A</option>
+                <option value="stok-desc">Stok ↓</option>
+                <option value="tersedia">Tersedia</option>
               </select>
             </div>
           </div>
