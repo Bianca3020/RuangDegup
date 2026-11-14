@@ -250,11 +250,7 @@ export async function borrowBook(bookId) {
 }
 
 export async function returnMemberBorrowing(id) {
-  try {
-    return await apiRequest(`/member/borrowings/${id}/return`, { method: 'POST' })
-  } catch {
-    return await apiRequest(`/member/borrowings/${id}`, { method: 'DELETE' })
-  }
+  return apiRequest(`/member/borrowings/${id}/return`, { method: 'POST' })
 }
 
 export async function getMemberFavorites() {
