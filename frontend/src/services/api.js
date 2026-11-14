@@ -249,6 +249,10 @@ export async function borrowBook(bookId) {
   })
 }
 
+export async function returnMemberBorrowing(id) {
+  return apiRequest(`/member/borrowings/${id}`, { method: 'DELETE' })
+}
+
 export async function getMemberFavorites() {
   return apiRequest('/member/favorites')
 }

@@ -3084,6 +3084,9 @@
   max-width: 440px;
   line-height: 1.6;
   margin-bottom: 20px;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
 }
 
 .dash-empty-box--compact p {
@@ -3151,6 +3154,7 @@
   flex-direction: column;
   padding: 18px 20px;
   flex: 1;
+  min-width: 0;
 }
 
 .borrow-card__status-row {
@@ -3199,6 +3203,9 @@
   color: var(--plum);
   margin-bottom: 2px;
   line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .borrow-card__author {
@@ -3238,10 +3245,6 @@
   color: var(--plum);
 }
 
-.borrow-card__footer {
-  margin-top: auto;
-}
-
 .borrow-card__btn-detail {
   display: inline-flex;
   align-items: center;
@@ -3256,11 +3259,49 @@
   color: var(--sage-dark);
 }
 
+.borrow-card__footer {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.borrow-card__btn-return {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  background-color: var(--sage-light);
+  color: var(--plum);
+  border: 1px solid var(--sage);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.borrow-card__btn-return:hover {
+  background-color: var(--sage);
+  color: var(--white);
+}
+
+.borrow-card__btn-return:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* TWO COLUMNS: FAVORITES & REVIEWS */
 .dash-columns-grid {
   display: grid;
   grid-template-columns: 1fr 1.1fr;
   gap: 28px;
+}
+
+.dash-columns-grid > * {
+  min-width: 0;
 }
 
 .dash-favorites-list {
@@ -3278,6 +3319,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   transition: border-color 0.2s ease;
+  overflow: hidden;
 }
 
 .fav-item:hover {

@@ -14,7 +14,7 @@ import {
   TrashIcon,
 } from '../common/Icons'
 import { Button } from '../common/Button'
-import { getMemberDashboard, removeFavorite, deleteReview, getStorageUrl } from '../../services/api'
+import { getMemberDashboard, removeFavorite, deleteReview, getStorageUrl, returnMemberBorrowing } from '../../services/api'
 
 export function MemberDashboard({
   currentUser,
@@ -27,6 +27,7 @@ export function MemberDashboard({
   const [error, setError] = useState(null)
   const [actionNotice, setActionNotice] = useState('')
   const [borrowingTab, setBorrowingTab] = useState('active')
+  const [returningId, setReturningId] = useState(null)
 
   const loadDashboard = useCallback(async () => {
     setLoading(true)
@@ -68,6 +69,21 @@ export function MemberDashboard({
       loadDashboard()
     } catch (err) {
       setActionNotice(err.message || 'Gagal menghapus ulasan.')
+    }
+  }
+
+  // Return a borrowed book
+  async function handleReturnBook(borrowingId, bookTitle) {
+    if (!window.confirm(`Kembalikan buku "${bookTitle}" sekarang?`)) return
+    setReturningId(borrowingId)
+    try {
+      await returnMemberBorrowing(borrowingId)
+      setActionNotice(`Buku "${bookTitle}" berhasil dikembalikan. Terima kasih!`)
+      loadDashboard()
+    } catch (err) {
+      setActionNotice(err.message || 'Gagal mengembalikan buku.')
+    } finally {
+      setReturningId(null)
     }
   }
 
@@ -375,6 +391,14 @@ export function MemberDashboard({
                           >
                             <span>Lihat Detail Buku</span>
                             <ArrowRight size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            className="borrow-card__btn-return"
+                            disabled={returningId === borrowing.id}
+                            onClick={() => handleReturnBook(borrowing.id, book.judul)}
+                          >
+                            {returningId === borrowing.id ? 'Memproses...' : 'Kembalikan Buku'}
                           </button>
                         </div>
                       </div>

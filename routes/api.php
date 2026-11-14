@@ -36,6 +36,7 @@ Route::middleware(['auth:sanctum', 'member'])->group(function () {
 
     Route::get('/member/borrowings', [MemberBorrowingController::class, 'index']);
     Route::post('/member/borrowings', [MemberBorrowingController::class, 'store']);
+    Route::delete('/member/borrowings/{id}', [MemberBorrowingController::class, 'destroy']);
 
     Route::get('/member/favorites', [FavoriteController::class, 'index']);
     Route::post('/member/favorites', [FavoriteController::class, 'store']);

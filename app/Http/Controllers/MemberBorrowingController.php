@@ -58,6 +58,40 @@ class MemberBorrowingController extends Controller
         return response()->json($borrowings);
     }
 
+    public function destroy(Request $request, int $id)
+    {
+        $member = $request->user()->member;
+
+        if (!$member) {
+            return response()->json(['message' => 'Data anggota tidak ditemukan'], 404);
+        }
+
+        $borrowing = Borrowing::where('id', $id)
+            ->where('member_id', $member->id)
+            ->first();
+
+        if (!$borrowing) {
+            return response()->json(['message' => 'Peminjaman tidak ditemukan'], 404);
+        }
+
+        if ($borrowing->status === 'dikembalikan') {
+            return response()->json(['message' => 'Buku sudah dikembalikan'], 422);
+        }
+
+        DB::transaction(function () use ($borrowing) {
+            $book = Book::lockForUpdate()->findOrFail($borrowing->book_id);
+
+            $borrowing->update([
+                'tanggal_kembali' => Carbon::today('Asia/Jakarta')->format('Y-m-d'),
+                'status'          => 'dikembalikan',
+            ]);
+
+            $book->increment('stok');
+        });
+
+        return response()->json(['message' => 'Buku berhasil dikembalikan']);
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
