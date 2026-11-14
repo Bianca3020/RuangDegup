@@ -8,6 +8,7 @@ import {
   InfoIcon,
 } from '../common/Icons'
 import { Button } from '../common/Button'
+import { ConfirmModal } from '../common/ConfirmModal'
 import { createReview, getStorageUrl } from '../../services/api'
 
 export function BookDetailModal({
@@ -29,6 +30,7 @@ export function BookDetailModal({
   const [reviewSuccess, setReviewSuccess] = useState('')
   const [borrowSuccess, setBorrowSuccess] = useState('')
   const [borrowError, setBorrowError] = useState('')
+  const [showBorrowConfirm, setShowBorrowConfirm] = useState(false)
 
   async function handleInternalBorrow() {
     if (!currentUser) {
@@ -245,7 +247,7 @@ export function BookDetailModal({
                   size="lg"
                   disabled={!isAvailable || !!borrowSuccess}
                   loading={borrowLoading}
-                  onClick={handleInternalBorrow}
+                  onClick={() => setShowBorrowConfirm(true)}
                   className="modal-borrow-btn"
                 >
                   {borrowSuccess
@@ -332,6 +334,22 @@ export function BookDetailModal({
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={showBorrowConfirm}
+        onClose={() => !borrowLoading && setShowBorrowConfirm(false)}
+        onConfirm={async () => {
+          setShowBorrowConfirm(false)
+          await handleInternalBorrow()
+        }}
+        title="Pinjam Buku"
+        subtitle="Sirkulasi Pustaka"
+        message={`Apakah Anda yakin ingin meminjam buku "${book.judul}" karya ${book.penulis}? Buku dapat dipinjam selama 7 hari kalender.`}
+        confirmText="Ya, Pinjam Buku"
+        cancelText="Batalkan"
+        variant="primary"
+        loading={borrowLoading}
+      />
     </div>
   )
 }

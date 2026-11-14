@@ -14,6 +14,7 @@ import {
   TrashIcon,
 } from '../common/Icons'
 import { Button } from '../common/Button'
+import { ConfirmModal } from '../common/ConfirmModal'
 import { getMemberDashboard, removeFavorite, deleteReview, getStorageUrl, returnMemberBorrowing } from '../../services/api'
 
 export function MemberDashboard({
@@ -28,6 +29,8 @@ export function MemberDashboard({
   const [actionNotice, setActionNotice] = useState('')
   const [borrowingTab, setBorrowingTab] = useState('active')
   const [returningId, setReturningId] = useState(null)
+  const [confirmDialog, setConfirmDialog] = useState(null)
+  const [confirmLoading, setConfirmLoading] = useState(false)
 
   const loadDashboard = useCallback(async () => {
     setLoading(true)
@@ -60,30 +63,53 @@ export function MemberDashboard({
     }
   }
 
-  // Delete a review directly from the dashboard
-  async function handleDeleteReview(reviewId, bookTitle) {
-    if (!window.confirm(`Hapus ulasan Anda untuk buku "${bookTitle}"?`)) return
-    try {
-      await deleteReview(reviewId)
-      setActionNotice(`Ulasan untuk buku "${bookTitle}" berhasil dihapus.`)
-      loadDashboard()
-    } catch (err) {
-      setActionNotice(err.message || 'Gagal menghapus ulasan.')
-    }
+  // Delete a review with modern modal confirmation
+  function handleDeleteReview(reviewId, bookTitle) {
+    setConfirmDialog({
+      title: 'Hapus Ulasan Buku',
+      subtitle: 'Apresiasi & Ulasan',
+      message: `Apakah Anda yakin ingin menghapus ulasan Anda untuk buku "${bookTitle}"? Tindakan ini tidak dapat dibatalkan.`,
+      confirmText: 'Ya, Hapus Ulasan',
+      variant: 'danger',
+      action: async () => {
+        await deleteReview(reviewId)
+        setActionNotice(`Ulasan untuk buku "${bookTitle}" berhasil dihapus.`)
+        loadDashboard()
+      },
+    })
   }
 
-  // Return a borrowed book
-  async function handleReturnBook(borrowingId, bookTitle) {
-    if (!window.confirm(`Kembalikan buku "${bookTitle}" sekarang?`)) return
-    setReturningId(borrowingId)
+  // Return a borrowed book with modern modal confirmation
+  function handleReturnBook(borrowingId, bookTitle) {
+    setConfirmDialog({
+      title: 'Kembalikan Buku',
+      subtitle: 'Sirkulasi Perpustakaan',
+      message: `Apakah Anda yakin ingin mengembalikan buku "${bookTitle}" ke perpustakaan sekarang? Stok buku akan bertambah kembali.`,
+      confirmText: 'Ya, Kembalikan Buku',
+      variant: 'sage',
+      action: async () => {
+        setReturningId(borrowingId)
+        try {
+          await returnMemberBorrowing(borrowingId)
+          setActionNotice(`Buku "${bookTitle}" berhasil dikembalikan. Terima kasih!`)
+          loadDashboard()
+        } finally {
+          setReturningId(null)
+        }
+      },
+    })
+  }
+
+  async function handleExecuteConfirm() {
+    if (!confirmDialog || !confirmDialog.action) return
+    setConfirmLoading(true)
     try {
-      await returnMemberBorrowing(borrowingId)
-      setActionNotice(`Buku "${bookTitle}" berhasil dikembalikan. Terima kasih!`)
-      loadDashboard()
+      await confirmDialog.action()
+      setConfirmDialog(null)
     } catch (err) {
-      setActionNotice(err.message || 'Gagal mengembalikan buku.')
+      setActionNotice(err.message || 'Terjadi kesalahan saat memproses tindakan.')
     } finally {
-      setReturningId(null)
+      setConfirmLoading(false)
     }
   }
 
@@ -624,6 +650,19 @@ export function MemberDashboard({
           </section>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={!!confirmDialog}
+        onClose={() => !confirmLoading && setConfirmDialog(null)}
+        onConfirm={handleExecuteConfirm}
+        title={confirmDialog?.title}
+        subtitle={confirmDialog?.subtitle}
+        message={confirmDialog?.message}
+        confirmText={confirmDialog?.confirmText}
+        cancelText="Batalkan"
+        variant={confirmDialog?.variant}
+        loading={confirmLoading}
+      />
     </div>
   )
 }

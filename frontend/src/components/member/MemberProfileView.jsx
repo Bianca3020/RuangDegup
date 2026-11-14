@@ -15,6 +15,7 @@ import {
   TagIcon,
 } from '../common/Icons'
 import { Button } from '../common/Button'
+import { ConfirmModal } from '../common/ConfirmModal'
 import {
   getMemberProfile,
   updateMemberProfile,
@@ -30,6 +31,8 @@ export function MemberProfileView({ currentUser, onBackToDashboard, onProfileUpd
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
   const [feedback, setFeedback] = useState({ type: '', message: '' })
+  const [confirmDialog, setConfirmDialog] = useState(null)
+  const [confirmLoading, setConfirmLoading] = useState(false)
 
   // Form states
   const [nama, setNama] = useState('')
@@ -144,53 +147,73 @@ export function MemberProfileView({ currentUser, onBackToDashboard, onProfileUpd
     setFeedback({ type: '', message: '' })
   }
 
-  async function handleDeletePhoto() {
-    if (!window.confirm('Apakah Anda yakin ingin menghapus foto profil?')) return
-
-    try {
-      setSaving(true)
-      await deleteMemberPhoto()
-      setPhotoFile(null)
-      if (photoPreview) URL.revokeObjectURL(photoPreview)
-      setPhotoPreview(null)
-      setProfile((prev) => (prev ? { ...prev, profile_photo: null } : null))
-      setFeedback({
-        type: 'success',
-        message: 'Foto profil berhasil dihapus.',
-      })
-      if (onProfileUpdated) onProfileUpdated()
-    } catch (err) {
-      setFeedback({
-        type: 'error',
-        message: err.message || 'Gagal menghapus foto profil.',
-      })
-    } finally {
-      setSaving(false)
-    }
+  function handleDeletePhoto() {
+    setConfirmDialog({
+      title: 'Hapus Foto Profil',
+      subtitle: 'Foto Identitas Anggota',
+      message: 'Apakah Anda yakin ingin menghapus foto profil? Foto profil Anda akan kembali ke inisial nama standar.',
+      confirmText: 'Ya, Hapus Foto',
+      variant: 'danger',
+      action: async () => {
+        setSaving(true)
+        try {
+          await deleteMemberPhoto()
+          setPhotoFile(null)
+          if (photoPreview) URL.revokeObjectURL(photoPreview)
+          setPhotoPreview(null)
+          setProfile((prev) => (prev ? { ...prev, profile_photo: null } : null))
+          setFeedback({
+            type: 'success',
+            message: 'Foto profil berhasil dihapus.',
+          })
+          if (onProfileUpdated) onProfileUpdated()
+        } finally {
+          setSaving(false)
+        }
+      },
+    })
   }
 
-  async function handleDeleteBackground() {
-    if (!window.confirm('Apakah Anda yakin ingin menghapus latar belakang profil?')) return
+  function handleDeleteBackground() {
+    setConfirmDialog({
+      title: 'Hapus Latar Belakang',
+      subtitle: 'Sampul Profil Anggota',
+      message: 'Apakah Anda yakin ingin menghapus gambar latar belakang profil? Header kartu profil akan kembali ke warna latar standar.',
+      confirmText: 'Ya, Hapus Sampul',
+      variant: 'danger',
+      action: async () => {
+        setSaving(true)
+        try {
+          await deleteMemberBackground()
+          setBackgroundFile(null)
+          if (backgroundPreview) URL.revokeObjectURL(backgroundPreview)
+          setBackgroundPreview(null)
+          setProfile((prev) => (prev ? { ...prev, profile_background: null } : null))
+          setFeedback({
+            type: 'success',
+            message: 'Latar belakang profil berhasil dihapus.',
+          })
+          if (onProfileUpdated) onProfileUpdated()
+        } finally {
+          setSaving(false)
+        }
+      },
+    })
+  }
 
+  async function handleExecuteConfirm() {
+    if (!confirmDialog || !confirmDialog.action) return
+    setConfirmLoading(true)
     try {
-      setSaving(true)
-      await deleteMemberBackground()
-      setBackgroundFile(null)
-      if (backgroundPreview) URL.revokeObjectURL(backgroundPreview)
-      setBackgroundPreview(null)
-      setProfile((prev) => (prev ? { ...prev, profile_background: null } : null))
-      setFeedback({
-        type: 'success',
-        message: 'Latar belakang profil berhasil dihapus.',
-      })
-      if (onProfileUpdated) onProfileUpdated()
+      await confirmDialog.action()
+      setConfirmDialog(null)
     } catch (err) {
       setFeedback({
         type: 'error',
-        message: err.message || 'Gagal menghapus latar belakang profil.',
+        message: err.message || 'Gagal memproses penghapusan.',
       })
     } finally {
-      setSaving(false)
+      setConfirmLoading(false)
     }
   }
 
@@ -778,6 +801,19 @@ export function MemberProfileView({ currentUser, onBackToDashboard, onProfileUpd
           </main>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={!!confirmDialog}
+        onClose={() => !confirmLoading && setConfirmDialog(null)}
+        onConfirm={handleExecuteConfirm}
+        title={confirmDialog?.title}
+        subtitle={confirmDialog?.subtitle}
+        message={confirmDialog?.message}
+        confirmText={confirmDialog?.confirmText}
+        cancelText="Batalkan"
+        variant={confirmDialog?.variant}
+        loading={confirmLoading}
+      />
     </div>
   )
 }
