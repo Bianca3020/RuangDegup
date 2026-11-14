@@ -23,6 +23,12 @@ class MemberDashboardController extends Controller
             ->latest('tanggal_pinjam')
             ->get();
 
+        $pastBorrowings = $member->borrowings()
+            ->with('book')
+            ->where('status', 'dikembalikan')
+            ->latest('tanggal_kembali')
+            ->get();
+
         $returnedCount = $member->borrowings()
             ->where('status', 'dikembalikan')
             ->count();
@@ -86,6 +92,8 @@ class MemberDashboardController extends Controller
             ],
 
             'active_borrowings' => $activeBorrowings,
+
+            'past_borrowings' => $pastBorrowings,
 
             'favorites' => $favorites,
 

@@ -25,6 +25,7 @@ export function MemberDashboard({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [actionNotice, setActionNotice] = useState('')
+  const [borrowingTab, setBorrowingTab] = useState('active')
 
   const loadDashboard = useCallback(async () => {
     setLoading(true)
@@ -108,7 +109,7 @@ export function MemberDashboard({
     )
   }
 
-  const { profile, summary, active_borrowings = [], favorites = [], reviews = [] } = data || {}
+  const { profile, summary, active_borrowings = [], past_borrowings = [], favorites = [], reviews = [] } = data || {}
 
   return (
     <div className="member-dashboard" aria-label="Dashboard Anggota RuangDegup">
@@ -252,102 +253,190 @@ export function MemberDashboard({
           </div>
         </section>
 
-        {/* SECTION 1: ACTIVE BORROWINGS */}
-        <section className="dash-section" aria-label="Buku yang Sedang Dipinjam">
+        {/* SECTION 1: ACTIVE BORROWINGS & PAST BORROWINGS */}
+        <section className="dash-section" aria-label="Sirkulasi Peminjaman Buku">
           <div className="dash-section__header">
             <div>
               <span className="section-eyebrow">
                 <span className="eyebrow-dot" aria-hidden="true" />
-                SIRKULASI AKTIF
+                SIRKULASI ANGGOTA
               </span>
-              <h2 className="dash-section__title">Buku yang Sedang Dipinjam</h2>
+              <h2 className="dash-section__title">
+                {borrowingTab === 'active' ? 'Buku yang Sedang Dipinjam' : 'Riwayat Peminjaman Selesai'}
+              </h2>
             </div>
-            <span className="dash-count-pill">
-              {active_borrowings.length} Buku
-            </span>
+            <div className="dash-tab-pills" role="tablist">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={borrowingTab === 'active'}
+                className={`dash-tab-pill ${borrowingTab === 'active' ? 'is-active' : ''}`}
+                onClick={() => setBorrowingTab('active')}
+              >
+                Sedang Dipinjam ({active_borrowings.length})
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={borrowingTab === 'past'}
+                className={`dash-tab-pill ${borrowingTab === 'past' ? 'is-active' : ''}`}
+                onClick={() => setBorrowingTab('past')}
+              >
+                Riwayat Selesai ({past_borrowings.length})
+              </button>
+            </div>
           </div>
 
-          {active_borrowings.length === 0 ? (
-            <div className="dash-empty-box">
-              <BookOpenIcon size={40} className="dash-empty-icon" />
-              <h3>Tidak Ada Buku yang Sedang Dipinjam</h3>
-              <p>
-                Anda sedang tidak memiliki pinjaman buku aktif. Temukan karya sastra, filosofi, atau sains favorit Anda di katalog perpustakaan.
-              </p>
-              <Button variant="sage" size="md" onClick={onExploreBooks}>
-                Cari Buku untuk Dipinjam
-              </Button>
-            </div>
-          ) : (
-            <div className="borrowings-grid">
-              {active_borrowings.map((borrowing) => {
-                const book = borrowing.book || {}
-                const statusType = borrowing.status_tampilan // 'Dipinjam' | 'Jatuh Tempo' | 'Terlambat'
+          {borrowingTab === 'active' ? (
+            active_borrowings.length === 0 ? (
+              <div className="dash-empty-box">
+                <BookOpenIcon size={40} className="dash-empty-icon" />
+                <h3>Tidak Ada Buku yang Sedang Dipinjam</h3>
+                <p>
+                  Anda sedang tidak memiliki pinjaman buku aktif. Temukan karya sastra, filosofi, atau sains favorit Anda di katalog perpustakaan.
+                </p>
+                <Button variant="sage" size="md" onClick={onExploreBooks}>
+                  Cari Buku untuk Dipinjam
+                </Button>
+              </div>
+            ) : (
+              <div className="borrowings-grid">
+                {active_borrowings.map((borrowing) => {
+                  const book = borrowing.book || {}
+                  const statusType = borrowing.status_tampilan // 'Dipinjam' | 'Jatuh Tempo' | 'Terlambat'
 
-                return (
-                  <article key={borrowing.id} className="borrow-card">
-                    <div className="borrow-card__cover">
-                      {book.cover ? (
-                        <img src={book.cover} alt={book.judul} />
-                      ) : (
-                        <div className="borrow-card__fallback">
-                          <span>r.</span>
-                          <h4>{book.judul}</h4>
-                        </div>
-                      )}
-                    </div>
+                  return (
+                    <article key={borrowing.id} className="borrow-card">
+                      <div className="borrow-card__cover">
+                        {book.cover ? (
+                          <img src={book.cover} alt={book.judul} />
+                        ) : (
+                          <div className="borrow-card__fallback">
+                            <span>r.</span>
+                            <h4>{book.judul}</h4>
+                          </div>
+                        )}
+                      </div>
 
-                    <div className="borrow-card__body">
-                      <div className="borrow-card__status-row">
-                        <span
-                          className={`borrow-badge borrow-badge--${
-                            statusType === 'Terlambat'
-                              ? 'late'
+                      <div className="borrow-card__body">
+                        <div className="borrow-card__status-row">
+                          <span
+                            className={`borrow-badge borrow-badge--${
+                              statusType === 'Terlambat'
+                                ? 'late'
+                                : statusType === 'Jatuh Tempo'
+                                ? 'warning'
+                                : 'active'
+                            }`}
+                          >
+                            {statusType === 'Terlambat'
+                              ? `Terlambat ${borrowing.terlambat_hari} Hari`
                               : statusType === 'Jatuh Tempo'
-                              ? 'warning'
-                              : 'active'
-                          }`}
-                        >
-                          {statusType === 'Terlambat'
-                            ? `Terlambat ${borrowing.terlambat_hari} Hari`
-                            : statusType === 'Jatuh Tempo'
-                            ? 'Jatuh Tempo Hari Ini'
-                            : 'Sedang Dipinjam'}
-                        </span>
-                        <span className="borrow-card__id">Trx #{borrowing.id}</span>
-                      </div>
-
-                      <h3 className="borrow-card__title">{book.judul}</h3>
-                      <p className="borrow-card__author">Oleh {book.penulis}</p>
-
-                      <div className="borrow-card__dates">
-                        <div>
-                          <span className="date-label">Tgl Pinjam</span>
-                          <span className="date-value">{borrowing.tanggal_pinjam}</span>
-                        </div>
-                        <div>
-                          <span className="date-label">Batas Kembali</span>
-                          <span className="date-value date-value--due">
-                            {borrowing.jatuh_tempo}
+                              ? 'Jatuh Tempo Hari Ini'
+                              : 'Sedang Dipinjam'}
                           </span>
+                          <span className="borrow-card__id">Trx #{borrowing.id}</span>
+                        </div>
+
+                        <h3 className="borrow-card__title">{book.judul}</h3>
+                        <p className="borrow-card__author">Oleh {book.penulis}</p>
+
+                        <div className="borrow-card__dates">
+                          <div>
+                            <span className="date-label">Tgl Pinjam</span>
+                            <span className="date-value">{borrowing.tanggal_pinjam}</span>
+                          </div>
+                          <div>
+                            <span className="date-label">Batas Kembali</span>
+                            <span className="date-value date-value--due">
+                              {borrowing.jatuh_tempo}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="borrow-card__footer">
+                          <button
+                            type="button"
+                            className="borrow-card__btn-detail"
+                            onClick={() => onSelectBook && onSelectBook(book)}
+                          >
+                            <span>Lihat Detail Buku</span>
+                            <ArrowRight size={14} />
+                          </button>
                         </div>
                       </div>
+                    </article>
+                  )
+                })}
+              </div>
+            )
+          ) : (
+            past_borrowings.length === 0 ? (
+              <div className="dash-empty-box">
+                <CheckCircleIcon size={40} className="dash-empty-icon" />
+                <h3>Belum Ada Riwayat Selesai</h3>
+                <p>
+                  Buku yang telah Anda kembalikan ke perpustakaan akan tercatat rapi di bagian ini sebagai jejak bacaan Anda.
+                </p>
+              </div>
+            ) : (
+              <div className="borrowings-grid">
+                {past_borrowings.map((borrowing) => {
+                  const book = borrowing.book || {}
 
-                      <div className="borrow-card__footer">
-                        <button
-                          type="button"
-                          className="borrow-card__btn-detail"
-                          onClick={() => onSelectBook && onSelectBook(book)}
-                        >
-                          <span>Lihat Detail Buku</span>
-                          <ArrowRight size={14} />
-                        </button>
+                  return (
+                    <article key={borrowing.id} className="borrow-card borrow-card--returned">
+                      <div className="borrow-card__cover">
+                        {book.cover ? (
+                          <img src={book.cover} alt={book.judul} />
+                        ) : (
+                          <div className="borrow-card__fallback">
+                            <span>r.</span>
+                            <h4>{book.judul}</h4>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  </article>
-                )
-              })}
-            </div>
+
+                      <div className="borrow-card__body">
+                        <div className="borrow-card__status-row">
+                          <span className="borrow-badge borrow-badge--returned">
+                            Telah Dikembalikan
+                          </span>
+                          <span className="borrow-card__id">Trx #{borrowing.id}</span>
+                        </div>
+
+                        <h3 className="borrow-card__title">{book.judul}</h3>
+                        <p className="borrow-card__author">Oleh {book.penulis}</p>
+
+                        <div className="borrow-card__dates">
+                          <div>
+                            <span className="date-label">Tgl Pinjam</span>
+                            <span className="date-value">{borrowing.tanggal_pinjam ? String(borrowing.tanggal_pinjam).split('T')[0] : '-'}</span>
+                          </div>
+                          <div>
+                            <span className="date-label">Dikembalikan</span>
+                            <span className="date-value date-value--returned">
+                              {borrowing.tanggal_kembali ? String(borrowing.tanggal_kembali).split('T')[0] : '-'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="borrow-card__footer">
+                          <button
+                            type="button"
+                            className="borrow-card__btn-detail"
+                            onClick={() => onSelectBook && onSelectBook(book)}
+                          >
+                            <span>Beri Ulasan / Baca Lagi</span>
+                            <ArrowRight size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  )
+                })}
+              </div>
+            )
           )}
         </section>
 
