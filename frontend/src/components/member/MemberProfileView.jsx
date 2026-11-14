@@ -31,6 +31,9 @@ export function MemberProfileView({ currentUser, onBackToDashboard, onProfileUpd
   const [feedback, setFeedback] = useState({ type: '', message: '' })
 
   // Form states
+  const [nama, setNama] = useState('')
+  const [noHp, setNoHp] = useState('')
+  const [alamat, setAlamat] = useState('')
   const [bio, setBio] = useState('')
   const [photoFile, setPhotoFile] = useState(null)
   const [photoPreview, setPhotoPreview] = useState(null)
@@ -55,6 +58,9 @@ export function MemberProfileView({ currentUser, onBackToDashboard, onProfileUpd
     try {
       const data = await getMemberProfile()
       setProfile(data)
+      setNama(data.nama || '')
+      setNoHp(data.no_hp || '')
+      setAlamat(data.alamat || '')
       setBio(data.bio || '')
       setPhotoFile(null)
       setPhotoPreview(null)
@@ -194,6 +200,9 @@ export function MemberProfileView({ currentUser, onBackToDashboard, onProfileUpd
 
     try {
       const formData = new FormData()
+      formData.append('nama', nama || '')
+      formData.append('no_hp', noHp || '')
+      formData.append('alamat', alamat || '')
       formData.append('bio', bio || '')
 
       if (photoFile) {
@@ -236,6 +245,9 @@ export function MemberProfileView({ currentUser, onBackToDashboard, onProfileUpd
   }
 
   function handleReset() {
+    setNama(profile?.nama || '')
+    setNoHp(profile?.no_hp || '')
+    setAlamat(profile?.alamat || '')
     setBio(profile?.bio || '')
     setPhotoFile(null)
     if (photoPreview) URL.revokeObjectURL(photoPreview)
@@ -541,7 +553,7 @@ export function MemberProfileView({ currentUser, onBackToDashboard, onProfileUpd
 
               <div className="library-card__footer">
                 <span className="card-footer-note">
-                  Kartu digital terverifikasi SMKN 6 Surakarta. Data pokok hanya dapat disunting oleh Petugas Perpustakaan.
+                  Kartu digital terverifikasi SMKN 6 Surakarta. Nomor anggota & kelas dikelola oleh Petugas Perpustakaan.
                 </span>
               </div>
             </div>
@@ -555,6 +567,56 @@ export function MemberProfileView({ currentUser, onBackToDashboard, onProfileUpd
                 <p className="profile-form-desc">
                   Sesuaikan bio dan foto personal Anda untuk ditampilkan pada kartu anggota dan ulasan buku.
                 </p>
+              </div>
+
+              {/* NAMA FIELD */}
+              <div className="form-group">
+                <label htmlFor="member-nama" className="form-label">
+                  Nama Lengkap <span style={{ color: 'var(--plum)' }}>*</span>
+                </label>
+                <input
+                  id="member-nama"
+                  type="text"
+                  className="form-input"
+                  value={nama}
+                  onChange={(e) => setNama(e.target.value)}
+                  placeholder="Nama lengkap anggota..."
+                  required
+                  disabled={saving}
+                />
+              </div>
+
+              {/* KONTAK GRID: NO HP & ALAMAT */}
+              <div className="form-grid-2">
+                <div className="form-group">
+                  <label htmlFor="member-no-hp" className="form-label">
+                    Nomor WhatsApp / HP
+                  </label>
+                  <input
+                    id="member-no-hp"
+                    type="tel"
+                    className="form-input"
+                    value={noHp}
+                    onChange={(e) => setNoHp(e.target.value)}
+                    placeholder="Contoh: 08123456789"
+                    disabled={saving}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="member-alamat" className="form-label">
+                    Alamat Tinggal
+                  </label>
+                  <input
+                    id="member-alamat"
+                    type="text"
+                    className="form-input"
+                    value={alamat}
+                    onChange={(e) => setAlamat(e.target.value)}
+                    placeholder="Alamat domisili..."
+                    disabled={saving}
+                  />
+                </div>
               </div>
 
               {/* BIO FIELD */}

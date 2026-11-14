@@ -352,8 +352,17 @@ function App() {
               setCurrentView('member-dashboard')
               window.scrollTo({ top: 0, behavior: 'smooth' })
             }}
-            onProfileUpdated={() => {
+            onProfileUpdated={(updatedData) => {
               setNotice('Profil berhasil diperbarui!')
+              if (updatedData?.nama) {
+                const updatedUser = { ...currentUser, name: updatedData.nama }
+                setCurrentUser(updatedUser)
+                try {
+                  localStorage.setItem('ruangdegup_user', JSON.stringify(updatedUser))
+                } catch (e) {
+                  // ignore
+                }
+              }
             }}
           />
         ) : currentView === 'member-dashboard' ? (
