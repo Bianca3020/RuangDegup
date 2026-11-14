@@ -54,7 +54,7 @@ class BookController extends Controller
         ];
 
         if ($request->hasFile('cover')) {
-            $rules['cover'] = 'required|image|max:10240';
+            $rules['cover'] = 'required|image|mimes:jpeg,png,jpg,webp|max:10240';
         } else {
             $rules['cover'] = 'nullable';
         }
@@ -113,7 +113,9 @@ class BookController extends Controller
         ];
 
         if ($request->hasFile('cover')) {
-            $rules['cover'] = 'required|image|max:10240';
+            $rules['cover'] = 'required|image|mimes:jpeg,png,jpg,webp|max:10240';
+        } else {
+            $rules['cover'] = 'nullable';
         }
 
         $messages = [
