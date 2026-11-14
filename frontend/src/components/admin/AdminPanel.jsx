@@ -37,6 +37,7 @@ import {
   returnAdminBorrowing,
   getBorrowingReports,
   downloadBorrowingReportPdf,
+  getStorageUrl,
 } from '../../services/api'
 
 // Jurusan SMKN 6 Surakarta
@@ -97,6 +98,8 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
   const [bookCoverFile, setBookCoverFile] = useState(null)
   const [bookCoverPreview, setBookCoverPreview] = useState(null)
   const [bookCoverExisting, setBookCoverExisting] = useState(null)
+  const [bookCoverUrl, setBookCoverUrl] = useState('')
+  const [coverInputMode, setCoverInputMode] = useState('file') // 'file' | 'url'
   const bookCoverInputRef = useRef(null)
 
   // Clean up cover preview object URL
@@ -300,7 +303,9 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
     setSelectedItem(book)
     setBookCoverFile(null)
     setBookCoverPreview(null)
-    setBookCoverExisting(book?.cover || null)
+    setBookCoverExisting(book?.cover ? getStorageUrl(book.cover) : null)
+    setBookCoverUrl(book?.cover && (book.cover.startsWith('http://') || book.cover.startsWith('https://')) ? book.cover : '')
+    setCoverInputMode('file')
 
     setBookForm({
       judul: book ? book.judul : '',
@@ -328,10 +333,10 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
       return
     }
 
-    if (file.size > 2 * 1024 * 1024) {
+    if (file.size > 5 * 1024 * 1024) {
       setFeedback({
         type: 'error',
-        message: 'Ukuran file sampul tidak boleh melebihi 2 MB.',
+        message: 'Ukuran file sampul tidak boleh melebihi 5 MB.',
       })
       e.target.value = ''
       return
@@ -372,6 +377,8 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
 
       if (bookCoverFile) {
         formData.append('cover', bookCoverFile)
+      } else if (bookCoverUrl.trim()) {
+        formData.append('cover_url', bookCoverUrl.trim())
       }
 
       if (modalMode === 'create') {
@@ -382,6 +389,7 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
         setFeedback({ type: 'success', message: res.message || 'Buku berhasil diperbarui.' })
       }
       handleRemoveCoverSelection()
+      setBookCoverUrl('')
       setModalType(null)
       loadBooks()
     } catch (err) {
@@ -878,7 +886,7 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
                         <td>
                           <div className="admin-book-item">
                             {b.cover ? (
-                              <img src={b.cover} alt={b.judul} className="admin-book-item__thumb" />
+                              <img src={getStorageUrl(b.cover)} alt={b.judul} className="admin-book-item__thumb" />
                             ) : (
                               <div className="admin-book-item__placeholder">
                                 <BookOpenIcon size={18} />
@@ -1539,87 +1547,147 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label" htmlFor="book-cover-file">
-                    Berkas Sampul Buku (JPG, PNG, WEBP &bull; Maks. 2MB)
-                  </label>
-                  <input
-                    ref={bookCoverInputRef}
-                    id="book-cover-file"
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp,image/jpg"
-                    style={{ display: 'none' }}
-                    onChange={handleCoverFileChange}
-                    disabled={modalSubmitting}
-                  />
-
-                  {bookCoverPreview ? (
-                    <div className="admin-cover-preview-card is-new">
-                      <img src={bookCoverPreview} alt="Pratinjau Sampul Baru" className="admin-cover-preview-thumb" />
-                      <div className="admin-cover-preview-info">
-                        <span className="admin-cover-pill admin-cover-pill--new">Berkas Baru Dipilih</span>
-                        <strong className="admin-cover-name">{bookCoverFile?.name}</strong>
-                        <span className="admin-cover-meta">
-                          {bookCoverFile ? (bookCoverFile.size / 1024).toFixed(1) : 0} KB
-                        </span>
-                        <div className="admin-cover-btn-group">
-                          <button
-                            type="button"
-                            className="admin-cover-action-btn"
-                            onClick={() => bookCoverInputRef.current?.click()}
-                            disabled={modalSubmitting}
-                          >
-                            <CameraIcon size={14} /> Ganti Gambar
-                          </button>
-                          <button
-                            type="button"
-                            className="admin-cover-action-btn admin-cover-action-btn--danger"
-                            onClick={handleRemoveCoverSelection}
-                            disabled={modalSubmitting}
-                          >
-                            <CloseIcon size={14} /> Batalkan Pilihan
-                          </button>
-                        </div>
-                      </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
+                    <label className="form-label" style={{ marginBottom: 0 }}>
+                      Sampul Buku (Berkas Foto atau Tautan URL)
+                    </label>
+                    <div className="admin-cover-mode-pills">
+                      <button
+                        type="button"
+                        className={`admin-cover-tab ${coverInputMode === 'file' ? 'is-active' : ''}`}
+                        onClick={() => setCoverInputMode('file')}
+                      >
+                        Unggah Berkas (5MB)
+                      </button>
+                      <button
+                        type="button"
+                        className={`admin-cover-tab ${coverInputMode === 'url' ? 'is-active' : ''}`}
+                        onClick={() => setCoverInputMode('url')}
+                      >
+                        Tautan / URL Gambar
+                      </button>
                     </div>
-                  ) : bookCoverExisting ? (
-                    <div className="admin-cover-preview-card">
-                      <img src={bookCoverExisting} alt="Sampul Saat Ini" className="admin-cover-preview-thumb" />
-                      <div className="admin-cover-preview-info">
-                        <span className="admin-cover-pill">Sampul Saat Ini</span>
-                        <span className="admin-cover-hint">
-                          Sampul ini tetap digunakan jika Anda tidak memilih pengganti.
-                        </span>
-                        <div className="admin-cover-btn-group">
-                          <button
-                            type="button"
-                            className="admin-cover-action-btn"
-                            onClick={() => bookCoverInputRef.current?.click()}
-                            disabled={modalSubmitting}
-                          >
-                            <CameraIcon size={14} /> Ganti dengan Gambar Baru
-                          </button>
+                  </div>
+
+                  {coverInputMode === 'url' ? (
+                    <div className="admin-cover-url-wrapper">
+                      <input
+                        type="url"
+                        placeholder="https://... tempel tautan gambar sampul buku"
+                        className="form-input"
+                        value={bookCoverUrl}
+                        onChange={(e) => setBookCoverUrl(e.target.value)}
+                        disabled={modalSubmitting}
+                      />
+                      {bookCoverUrl && (
+                        <div className="admin-cover-preview-card is-new" style={{ marginTop: '10px' }}>
+                          <img
+                            src={bookCoverUrl}
+                            alt="Pratinjau Sampul URL"
+                            className="admin-cover-preview-thumb"
+                            onError={(e) => {
+                              e.target.style.display = 'none'
+                            }}
+                          />
+                          <div className="admin-cover-preview-info">
+                            <span className="admin-cover-pill admin-cover-pill--new">Tautan Gambar Digunakan</span>
+                            <span className="admin-cover-meta" style={{ wordBreak: 'break-all', fontSize: '11px' }}>{bookCoverUrl}</span>
+                            <div className="admin-cover-btn-group">
+                              <button
+                                type="button"
+                                className="admin-cover-action-btn admin-cover-action-btn--danger"
+                                onClick={() => setBookCoverUrl('')}
+                                disabled={modalSubmitting}
+                              >
+                                <CloseIcon size={14} /> Hapus Tautan
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   ) : (
-                    <div
-                      className="admin-cover-dropzone"
-                      onClick={() => bookCoverInputRef.current?.click()}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault()
-                          bookCoverInputRef.current?.click()
-                        }
-                      }}
-                    >
-                      <ImageIcon size={26} className="admin-cover-dropzone__icon" />
-                      <div className="admin-cover-dropzone__body">
-                        <strong>Pilih Berkas Sampul</strong>
-                        <span>Klik untuk memilih berkas dari perangkat Anda</span>
-                      </div>
-                    </div>
+                    <>
+                      <input
+                        ref={bookCoverInputRef}
+                        id="book-cover-file"
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/jpg"
+                        style={{ display: 'none' }}
+                        onChange={handleCoverFileChange}
+                        disabled={modalSubmitting}
+                      />
+
+                      {bookCoverPreview ? (
+                        <div className="admin-cover-preview-card is-new">
+                          <img src={bookCoverPreview} alt="Pratinjau Sampul Baru" className="admin-cover-preview-thumb" />
+                          <div className="admin-cover-preview-info">
+                            <span className="admin-cover-pill admin-cover-pill--new">Berkas Baru Dipilih</span>
+                            <strong className="admin-cover-name">{bookCoverFile?.name}</strong>
+                            <span className="admin-cover-meta">
+                              {bookCoverFile ? (bookCoverFile.size / 1024).toFixed(1) : 0} KB
+                            </span>
+                            <div className="admin-cover-btn-group">
+                              <button
+                                type="button"
+                                className="admin-cover-action-btn"
+                                onClick={() => bookCoverInputRef.current?.click()}
+                                disabled={modalSubmitting}
+                              >
+                                <CameraIcon size={14} /> Ganti Gambar
+                              </button>
+                              <button
+                                type="button"
+                                className="admin-cover-action-btn admin-cover-action-btn--danger"
+                                onClick={handleRemoveCoverSelection}
+                                disabled={modalSubmitting}
+                              >
+                                <CloseIcon size={14} /> Batalkan Pilihan
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : bookCoverExisting ? (
+                        <div className="admin-cover-preview-card">
+                          <img src={bookCoverExisting} alt="Sampul Saat Ini" className="admin-cover-preview-thumb" />
+                          <div className="admin-cover-preview-info">
+                            <span className="admin-cover-pill">Sampul Saat Ini</span>
+                            <span className="admin-cover-hint">
+                              Sampul ini tetap digunakan jika Anda tidak memilih pengganti.
+                            </span>
+                            <div className="admin-cover-btn-group">
+                              <button
+                                type="button"
+                                className="admin-cover-action-btn"
+                                onClick={() => bookCoverInputRef.current?.click()}
+                                disabled={modalSubmitting}
+                              >
+                                <CameraIcon size={14} /> Ganti dengan Gambar Baru
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          className="admin-cover-dropzone"
+                          onClick={() => bookCoverInputRef.current?.click()}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault()
+                              bookCoverInputRef.current?.click()
+                            }
+                          }}
+                        >
+                          <ImageIcon size={26} className="admin-cover-dropzone__icon" />
+                          <div className="admin-cover-dropzone__body">
+                            <strong>Pilih Berkas Sampul</strong>
+                            <span>Klik untuk memilih berkas dari perangkat Anda (Maks. 5MB)</span>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>

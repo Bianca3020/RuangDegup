@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { SearchIcon, ArrowRight } from '../common/Icons'
+import { SearchIcon, ArrowRight, CloseIcon } from '../common/Icons'
 
 const popularKeywords = [
   'Sastra Indonesia',
@@ -44,20 +44,31 @@ export function SearchBanner({ onSearch }) {
         <form className="search-banner__form" onSubmit={handleSubmit} role="search">
           <div className="search-banner__input-wrapper">
             <span className="search-banner__icon" aria-hidden="true">
-              <SearchIcon size={20} />
+              <SearchIcon size={19} />
             </span>
             <input
               type="search"
               className="search-banner__input"
-              placeholder="Cari berdasarkan judul buku atau nama penulis..."
+              placeholder="Cari judul, penulis, atau topik..."
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               aria-label="Cari buku atau penulis"
             />
+            {keyword && (
+              <button
+                type="button"
+                className="search-banner__clear"
+                onClick={() => setKeyword('')}
+                aria-label="Hapus kata kunci pencarian"
+              >
+                <CloseIcon size={16} />
+              </button>
+            )}
           </div>
-          <button type="submit" className="search-banner__btn">
-            <span>Cari Buku</span>
-            <ArrowRight size={16} />
+          <button type="submit" className="search-banner__btn" aria-label="Cari Buku">
+            <span className="search-banner__btn-text-desktop">Cari Buku</span>
+            <span className="search-banner__btn-text-mobile">Cari</span>
+            <ArrowRight size={15} />
           </button>
         </form>
 

@@ -63,6 +63,10 @@ class BookController extends Controller
 
         if ($request->hasFile('cover')) {
             $validated['cover'] = $request->file('cover')->store('books/covers', 'public');
+        } elseif ($request->filled('cover_url')) {
+            $validated['cover'] = $request->cover_url;
+        } elseif ($request->filled('cover') && is_string($request->cover) && (str_starts_with($request->cover, 'http://') || str_starts_with($request->cover, 'https://'))) {
+            $validated['cover'] = $request->cover;
         } else {
             unset($validated['cover']);
         }
@@ -105,6 +109,10 @@ class BookController extends Controller
 
         if ($request->hasFile('cover')) {
             $validated['cover'] = $request->file('cover')->store('books/covers', 'public');
+        } elseif ($request->filled('cover_url')) {
+            $validated['cover'] = $request->cover_url;
+        } elseif ($request->filled('cover') && is_string($request->cover) && (str_starts_with($request->cover, 'http://') || str_starts_with($request->cover, 'https://'))) {
+            $validated['cover'] = $request->cover;
         } else {
             // Keep existing cover if not replaced
             unset($validated['cover']);

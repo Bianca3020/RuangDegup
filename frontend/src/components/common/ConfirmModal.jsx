@@ -13,6 +13,7 @@ export function ConfirmModal({
   variant = 'primary', // 'primary' | 'danger' | 'sage'
   icon = null,
   loading = false,
+  error = '',
 }) {
   useEffect(() => {
     function handleKeyDown(e) {
@@ -81,6 +82,12 @@ export function ConfirmModal({
 
         {/* BODY */}
         <div className="confirm-modal-body">
+          {error && (
+            <div className="confirm-modal-error-banner" role="alert">
+              <AlertCircleIcon size={16} />
+              <span>{error}</span>
+            </div>
+          )}
           {typeof message === 'string' ? <p>{message}</p> : message}
         </div>
 

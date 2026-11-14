@@ -31,6 +31,7 @@ export function MemberDashboard({
   const [returningId, setReturningId] = useState(null)
   const [confirmDialog, setConfirmDialog] = useState(null)
   const [confirmLoading, setConfirmLoading] = useState(false)
+  const [confirmError, setConfirmError] = useState('')
 
   const loadDashboard = useCallback(async () => {
     setLoading(true)
@@ -81,17 +82,23 @@ export function MemberDashboard({
 
   // Return a borrowed book with modern modal confirmation
   function handleReturnBook(borrowingId, bookTitle) {
+    setConfirmError('')
     setConfirmDialog({
-      title: 'Kembalikan Buku',
+      title: 'Pengembalian Buku',
       subtitle: 'Sirkulasi Perpustakaan',
-      message: `Apakah Anda yakin ingin mengembalikan buku "${bookTitle}" ke perpustakaan sekarang? Stok buku akan bertambah kembali.`,
-      confirmText: 'Ya, Kembalikan Buku',
+      message: (
+        <span>
+          Pastikan buku fisik <strong>"{bookTitle}"</strong> sudah diserahkan ke meja sirkulasi perpustakaan ya. Catatan peminjaman ini akan otomatis dipindahkan ke riwayat selesai Anda.
+        </span>
+      ),
+      confirmText: 'Ya, Sudah Dikembalikan',
+      cancelText: 'Nanti Dulu',
       variant: 'sage',
       action: async () => {
         setReturningId(borrowingId)
         try {
           await returnMemberBorrowing(borrowingId)
-          setActionNotice(`Buku "${bookTitle}" berhasil dikembalikan. Terima kasih!`)
+          setActionNotice(`Buku "${bookTitle}" berhasil dikembalikan. Terima kasih telah membaca di RuangDegup!`)
           loadDashboard()
         } finally {
           setReturningId(null)
@@ -103,11 +110,14 @@ export function MemberDashboard({
   async function handleExecuteConfirm() {
     if (!confirmDialog || !confirmDialog.action) return
     setConfirmLoading(true)
+    setConfirmError('')
     try {
       await confirmDialog.action()
       setConfirmDialog(null)
     } catch (err) {
-      setActionNotice(err.message || 'Terjadi kesalahan saat memproses tindakan.')
+      const msg = err.message || 'Gagal memproses tindakan.'
+      setConfirmError(msg)
+      setActionNotice(msg)
     } finally {
       setConfirmLoading(false)
     }
@@ -659,9 +669,10 @@ export function MemberDashboard({
         subtitle={confirmDialog?.subtitle}
         message={confirmDialog?.message}
         confirmText={confirmDialog?.confirmText}
-        cancelText="Batalkan"
+        cancelText={confirmDialog?.cancelText || 'Batalkan'}
         variant={confirmDialog?.variant}
         loading={confirmLoading}
+        error={confirmError}
       />
     </div>
   )

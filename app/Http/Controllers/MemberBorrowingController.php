@@ -92,6 +92,11 @@ class MemberBorrowingController extends Controller
         return response()->json(['message' => 'Buku berhasil dikembalikan']);
     }
 
+    public function returnBook(Request $request, int $id)
+    {
+        return $this->destroy($request, $id);
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
