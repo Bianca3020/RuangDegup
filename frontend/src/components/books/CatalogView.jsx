@@ -127,8 +127,10 @@ export function CatalogView({
   favoritesList = [],
   initialSearch = '',
   initialCategory = null,
+  onFilterChange,
 }) {
   const [books, setBooks] = useState([])
+  const [allCategoriesList, setAllCategoriesList] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -149,17 +151,65 @@ export function CatalogView({
 
   // Synchronize when initial props change
   useEffect(() => {
-    if (initialSearch !== activeSearch) {
-      setSearchInput(initialSearch)
-      setActiveSearch(initialSearch)
-    }
-  }, [initialSearch, activeSearch])
+    setSearchInput(initialSearch || '')
+    setActiveSearch(initialSearch || '')
+  }, [initialSearch])
 
   useEffect(() => {
-    if (initialCategory !== selectedCategory) {
-      setSelectedCategory(initialCategory)
+    setSelectedCategory(initialCategory || null)
+  }, [initialCategory])
+
+  // Load all available categories from entire catalog or fallback
+  useEffect(() => {
+    let isMounted = true
+    async function fetchAllCategories() {
+      try {
+        const firstPage = await fetchCatalog({ page: 1 })
+        if (Array.isArray(firstPage?.data)) {
+          const catMap = new Map()
+          firstPage.data.forEach((b) => {
+            if (b.category?.id && b.category?.nama_kategori) {
+              catMap.set(String(b.category.id), {
+                id: b.category.id,
+                name: b.category.nama_kategori,
+              })
+            }
+          })
+
+          const lastPage = Math.max(1, Number(firstPage.last_page) || 1)
+          if (lastPage > 1) {
+            const pages = await Promise.all(
+              Array.from({ length: Math.min(lastPage - 1, 4) }, (_, i) =>
+                fetchCatalog({ page: i + 2 })
+              )
+            )
+            pages.forEach((p) => {
+              if (Array.isArray(p?.data)) {
+                p.data.forEach((b) => {
+                  if (b.category?.id && b.category?.nama_kategori) {
+                    catMap.set(String(b.category.id), {
+                      id: b.category.id,
+                      name: b.category.nama_kategori,
+                    })
+                  }
+                })
+              }
+            })
+          }
+
+          if (isMounted && catMap.size > 0) {
+            setAllCategoriesList(Array.from(catMap.values()))
+          }
+        }
+      } catch {
+        // Handled silently, fallback will be used
+      }
     }
-  }, [initialCategory, selectedCategory])
+    fetchAllCategories()
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   // Fetch catalog from Laravel API
   const loadCatalog = useCallback(
@@ -184,12 +234,10 @@ export function CatalogView({
             to: response.to || response.data.length,
           })
         } else {
-          // If response format is unexpected or empty array
           setBooks([])
           setPagination({ currentPage: 1, lastPage: 1, total: 0, from: 0, to: 0 })
         }
       } catch (err) {
-        // If network/offline, fallback to curated dataset filtered locally
         let filtered = [...fallbackCatalog]
         if (activeSearch) {
           const q = activeSearch.toLowerCase()
@@ -230,23 +278,24 @@ export function CatalogView({
     loadCatalog(1)
   }, [loadCatalog])
 
-  // Extract available categories dynamically
+  // Extract available categories dynamically (merge fetched categories with fallbacks)
   const availableCategories = useMemo(() => {
     const map = new Map()
-    // Combine books and fallback for rich category chips
-    const pool = [...books, ...fallbackCatalog]
-    pool.forEach((book) => {
-      if (book.category && book.category.id) {
-        if (!map.has(book.category.id)) {
-          map.set(book.category.id, {
-            id: book.category.id,
-            name: book.category.nama_kategori,
-          })
-        }
+    fallbackCatalog.forEach((b) => {
+      if (b.category?.id) {
+        map.set(String(b.category.id), { id: b.category.id, name: b.category.nama_kategori })
+      }
+    })
+    allCategoriesList.forEach((c) => {
+      map.set(String(c.id), c)
+    })
+    books.forEach((b) => {
+      if (b.category?.id) {
+        map.set(String(b.category.id), { id: b.category.id, name: b.category.nama_kategori })
       }
     })
     return Array.from(map.values())
-  }, [books])
+  }, [books, allCategoriesList])
 
   // Local sorting
   const sortedBooks = useMemo(() => {
@@ -265,7 +314,25 @@ export function CatalogView({
 
   function handleSearchSubmit(e) {
     e.preventDefault()
-    setActiveSearch(searchInput.trim())
+    const trimmed = searchInput.trim()
+    setActiveSearch(trimmed)
+    if (onFilterChange) onFilterChange(trimmed, selectedCategory)
+  }
+
+  function handleCategoryClick(catId) {
+    const nextCat = String(selectedCategory) === String(catId) ? null : catId
+    setSelectedCategory(nextCat)
+    if (onFilterChange) onFilterChange(activeSearch, nextCat)
+  }
+
+  function handleClearSearch(e) {
+    if (e) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+    setSearchInput('')
+    setActiveSearch('')
+    if (onFilterChange) onFilterChange('', selectedCategory)
   }
 
   function handleResetFilters() {
@@ -273,6 +340,7 @@ export function CatalogView({
     setActiveSearch('')
     setSelectedCategory(null)
     setSortBy('judul-asc')
+    if (onFilterChange) onFilterChange('', null)
   }
 
   function handlePageChange(newPage) {
@@ -303,14 +371,14 @@ export function CatalogView({
 
       {/* FILTER & SEARCH TOOLBAR */}
       <div className="catalog-toolbar">
-        {/* SEARCH FORM */}
+        {/* SEARCH & FILTER BAR */}
         <form className="catalog-search-form" onSubmit={handleSearchSubmit} role="search">
           <div className="catalog-search-input-box">
             <SearchIcon size={18} className="catalog-search-icon" />
             <input
               type="search"
               className="catalog-search-input"
-              placeholder="Cari judul buku atau nama penulis..."
+              placeholder="Cari judul buku atau penulis..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               aria-label="Cari buku dalam katalog"
@@ -319,38 +387,35 @@ export function CatalogView({
               <button
                 type="button"
                 className="catalog-search-clear"
-                onClick={() => {
-                  setSearchInput('')
-                  setActiveSearch('')
-                }}
+                onClick={handleClearSearch}
                 aria-label="Hapus kata kunci pencarian"
               >
                 <CloseIcon size={16} />
               </button>
             )}
+
+            {/* INTEGRATED SORT DROPDOWN INSIDE SEARCH BAR */}
+            <div className="catalog-inline-sort">
+              <span className="catalog-inline-divider" aria-hidden="true" />
+              <select
+                id="catalog-sort"
+                className="catalog-inline-sort-select"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                aria-label="Urutkan koleksi buku"
+              >
+                <option value="judul-asc">Judul (A-Z)</option>
+                <option value="judul-desc">Judul (Z-A)</option>
+                <option value="stok-desc">Stok Terbanyak</option>
+                <option value="tersedia">Hanya Tersedia</option>
+              </select>
+            </div>
           </div>
-          <Button type="submit" variant="primary" size="md">
+
+          <Button type="submit" variant="primary" size="md" className="catalog-search-submit-btn">
             Cari
           </Button>
         </form>
-
-        {/* SORT SELECTOR */}
-        <div className="catalog-sort-box">
-          <label htmlFor="catalog-sort" className="catalog-sort-label">
-            Urutkan:
-          </label>
-          <select
-            id="catalog-sort"
-            className="catalog-sort-select"
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-          >
-            <option value="judul-asc">Judul (A &ndash; Z)</option>
-            <option value="judul-desc">Judul (Z &ndash; A)</option>
-            <option value="stok-desc">Stok Terbanyak</option>
-            <option value="tersedia">Hanya yang Tersedia</option>
-          </select>
-        </div>
       </div>
 
       {/* CATEGORY CHIPS BAR */}
@@ -363,7 +428,10 @@ export function CatalogView({
         <button
           type="button"
           className={`category-pill ${!selectedCategory ? 'is-active' : ''}`}
-          onClick={() => setSelectedCategory(null)}
+          onClick={() => {
+            setSelectedCategory(null)
+            if (onFilterChange) onFilterChange(activeSearch, null)
+          }}
         >
           Semua Koleksi
         </button>
@@ -378,11 +446,7 @@ export function CatalogView({
                 ? 'is-active'
                 : ''
             }`}
-            onClick={() =>
-              setSelectedCategory((prev) =>
-                String(prev) === String(cat.id) ? null : cat.id
-              )
-            }
+            onClick={() => handleCategoryClick(cat.id)}
           >
             {cat.name}
           </button>

@@ -179,8 +179,8 @@ function App() {
   }
 
   // When category is clicked from CategorySection
-  function handleSelectCategoryFromSection(catName) {
-    setCatalogCategory(catName)
+  function handleSelectCategoryFromSection(catName, catId) {
+    setCatalogCategory(catId || catName)
     scrollToSection('katalog-koleksi')
   }
 
@@ -378,7 +378,10 @@ function App() {
             <SearchBanner onSearch={handleSearchFromBanner} />
 
             {/* SECTION 3: KATEGORI BUKU */}
-            <CategorySection onSelectCategory={handleSelectCategoryFromSection} />
+            <CategorySection
+              onSelectCategory={handleSelectCategoryFromSection}
+              selectedCategoryId={catalogCategory}
+            />
 
             {/* SECTION 4: FEATURED BOOKS (KURASI REDAKSI) */}
             <FeaturedSection
@@ -396,6 +399,10 @@ function App() {
                 favoritesList={favoritesList}
                 initialSearch={catalogSearch}
                 initialCategory={catalogCategory}
+                onFilterChange={(search, category) => {
+                  setCatalogSearch(search)
+                  setCatalogCategory(category)
+                }}
               />
             </div>
 
