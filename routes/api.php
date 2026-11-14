@@ -29,6 +29,7 @@ Route::middleware(['auth:sanctum', 'member'])->group(function () {
 
     Route::get('/member/profile', [MemberProfileController::class, 'show']);
     Route::post('/member/profile', [MemberProfileController::class, 'update']);
+    Route::post('/member/profile/password', [MemberProfileController::class, 'updatePassword']);
 
     Route::delete('/member/profile/photo', [MemberProfileController::class, 'deletePhoto']);
     Route::delete('/member/profile/background', [MemberProfileController::class, 'deleteBackground']);
@@ -54,6 +55,7 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
 
     Route::apiResource('categories', CategoryController::class);
     Route::apiResource('books', BookController::class);
+    Route::post('/books/{book}', [BookController::class, 'update']);
     Route::apiResource('members', MemberController::class);
     Route::apiResource('borrowings', BorrowingController::class);
 });

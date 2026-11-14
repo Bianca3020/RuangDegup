@@ -20,6 +20,7 @@ import {
   updateMemberProfile,
   deleteMemberPhoto,
   deleteMemberBackground,
+  updateMemberPassword,
 } from '../../services/api'
 
 export function MemberProfileView({ currentUser, onBackToDashboard, onProfileUpdated }) {
@@ -35,6 +36,14 @@ export function MemberProfileView({ currentUser, onBackToDashboard, onProfileUpd
   const [photoPreview, setPhotoPreview] = useState(null)
   const [backgroundFile, setBackgroundFile] = useState(null)
   const [backgroundPreview, setBackgroundPreview] = useState(null)
+
+  // Password state
+  const [passwordForm, setPasswordForm] = useState({
+    current_password: '',
+    new_password: '',
+    new_password_confirmation: '',
+  })
+  const [passwordSaving, setPasswordSaving] = useState(false)
 
   // File input refs
   const photoInputRef = useRef(null)
@@ -235,6 +244,34 @@ export function MemberProfileView({ currentUser, onBackToDashboard, onProfileUpd
     if (backgroundPreview) URL.revokeObjectURL(backgroundPreview)
     setBackgroundPreview(null)
     setFeedback({ type: '', message: '' })
+  }
+
+  async function handlePasswordSubmit(e) {
+    e.preventDefault()
+    setPasswordSaving(true)
+    setFeedback({ type: '', message: '' })
+
+    try {
+      const res = await updateMemberPassword(passwordForm)
+      setFeedback({
+        type: 'success',
+        message: res.message || 'Password Anda berhasil diperbarui!',
+      })
+      setPasswordForm({
+        current_password: '',
+        new_password: '',
+        new_password_confirmation: '',
+      })
+    } catch (err) {
+      let msg = err.message || 'Gagal memperbarui password.'
+      if (err.errors) {
+        const errorList = Object.values(err.errors).flat()
+        if (errorList.length > 0) msg = errorList.join(' ')
+      }
+      setFeedback({ type: 'error', message: msg })
+    } finally {
+      setPasswordSaving(false)
+    }
   }
 
   if (loading) {
@@ -596,6 +633,82 @@ export function MemberProfileView({ currentUser, onBackToDashboard, onProfileUpd
                   onClick={handleReset}
                 >
                   Reset Perubahan
+                </Button>
+              </div>
+            </form>
+
+            {/* SECTION GANTI PASSWORD */}
+            <form onSubmit={handlePasswordSubmit} className="profile-edit-card security-card" style={{ marginTop: '24px' }}>
+              <div className="profile-edit-card__header">
+                <div>
+                  <h3 className="profile-edit-card__title">Keamanan Akun & Password</h3>
+                  <p className="profile-edit-card__desc">
+                    Perbarui kata sandi akun Anda secara berkala untuk menjaga keamanan akses sirkulasi buku.
+                  </p>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="current-pw">
+                  Password Saat Ini <span className="req">*</span>
+                </label>
+                <input
+                  id="current-pw"
+                  type="password"
+                  required
+                  placeholder="Masukkan kata sandi lama Anda..."
+                  className="form-input"
+                  value={passwordForm.current_password}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, current_password: e.target.value })}
+                  disabled={passwordSaving}
+                />
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label" htmlFor="new-pw">
+                    Password Baru <span className="req">*</span>
+                  </label>
+                  <input
+                    id="new-pw"
+                    type="password"
+                    required
+                    minLength={6}
+                    placeholder="Minimal 6 karakter..."
+                    className="form-input"
+                    value={passwordForm.new_password}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
+                    disabled={passwordSaving}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" htmlFor="confirm-pw">
+                    Konfirmasi Password Baru <span className="req">*</span>
+                  </label>
+                  <input
+                    id="confirm-pw"
+                    type="password"
+                    required
+                    minLength={6}
+                    placeholder="Ulangi kata sandi baru..."
+                    className="form-input"
+                    value={passwordForm.new_password_confirmation}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, new_password_confirmation: e.target.value })}
+                    disabled={passwordSaving}
+                  />
+                </div>
+              </div>
+
+              <div className="profile-form-actions">
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="md"
+                  disabled={passwordSaving}
+                  icon={passwordSaving ? <RefreshIcon size={16} className="spin" /> : <CheckCircleIcon size={16} />}
+                >
+                  {passwordSaving ? 'Memperbarui...' : 'Perbarui Password'}
                 </Button>
               </div>
             </form>

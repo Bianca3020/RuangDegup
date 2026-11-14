@@ -197,6 +197,13 @@ export async function deleteMemberBackground() {
   return apiRequest('/member/profile/background', { method: 'DELETE' })
 }
 
+export async function updateMemberPassword(payload) {
+  return apiRequest('/member/profile/password', {
+    method: 'POST',
+    body: payload,
+  })
+}
+
 export async function getMemberBorrowings() {
   return apiRequest('/member/borrowings')
 }
@@ -277,11 +284,17 @@ export async function getAdminBooks() {
   return apiRequest('/books')
 }
 
-export async function createAdminBook(data) {
+export function createAdminBook(data) {
   return apiRequest('/books', { method: 'POST', body: data })
 }
 
-export async function updateAdminBook(id, data) {
+export function updateAdminBook(id, data) {
+  if (data instanceof FormData) {
+    if (!data.has('_method')) {
+      data.append('_method', 'PUT')
+    }
+    return apiRequest(`/books/${id}`, { method: 'POST', body: data })
+  }
   return apiRequest(`/books/${id}`, { method: 'PUT', body: data })
 }
 
