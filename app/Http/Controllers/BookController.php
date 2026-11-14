@@ -43,23 +43,36 @@ class BookController extends Controller
     public function store(Request $request)
     {
         $rules = [
-            'category_id' => 'required|exists:categories,id',
+            'category_id' => 'required',
             'judul' => 'required|string|max:255',
             'penulis' => 'required|string|max:255',
             'penerbit' => 'nullable|string|max:255',
-            'tahun_terbit' => 'nullable|integer|min:1000|max:'.date('Y'),
+            'tahun_terbit' => 'nullable',
             'isbn' => 'nullable|string|max:255',
             'deskripsi' => 'nullable|string',
-            'stok' => 'required|integer|min:0',
+            'stok' => 'required|numeric|min:0',
         ];
 
         if ($request->hasFile('cover')) {
-            $rules['cover'] = 'required|image|mimes:jpg,jpeg,png,webp|max:5120';
+            $rules['cover'] = 'required|image|max:10240';
         } else {
             $rules['cover'] = 'nullable';
         }
 
-        $validated = $request->validate($rules);
+        $messages = [
+            'judul.required' => 'Judul buku wajib diisi.',
+            'category_id.required' => 'Kategori buku wajib dipilih.',
+            'penulis.required' => 'Nama penulis wajib diisi.',
+            'stok.required' => 'Jumlah stok fisik wajib diisi.',
+            'stok.numeric' => 'Jumlah stok fisik harus berupa angka.',
+            'stok.min' => 'Jumlah stok fisik minimal 0.',
+            'cover.image' => 'Berkas sampul harus berupa gambar (JPG, JPEG, PNG, atau WEBP).',
+            'cover.max' => 'Ukuran berkas sampul tidak boleh melebihi 10 MB.',
+        ];
+
+        $validated = $request->validate($rules, $messages);
+        $validated['category_id'] = (int) $validated['category_id'];
+        $validated['stok'] = (int) $validated['stok'];
 
         if ($request->hasFile('cover')) {
             $validated['cover'] = $request->file('cover')->store('books/covers', 'public');
@@ -89,21 +102,34 @@ class BookController extends Controller
     public function update(Request $request, Book $book)
     {
         $rules = [
-            'category_id' => 'required|exists:categories,id',
+            'category_id' => 'required',
             'judul' => 'required|string|max:255',
             'penulis' => 'required|string|max:255',
             'penerbit' => 'nullable|string|max:255',
-            'tahun_terbit' => 'nullable|integer|min:1000|max:'.date('Y'),
+            'tahun_terbit' => 'nullable',
             'isbn' => 'nullable|string|max:255',
             'deskripsi' => 'nullable|string',
-            'stok' => 'required|integer|min:0',
+            'stok' => 'required|numeric|min:0',
         ];
 
         if ($request->hasFile('cover')) {
-            $rules['cover'] = 'required|image|mimes:jpg,jpeg,png,webp|max:5120';
+            $rules['cover'] = 'required|image|max:10240';
         }
 
-        $validated = $request->validate($rules);
+        $messages = [
+            'judul.required' => 'Judul buku wajib diisi.',
+            'category_id.required' => 'Kategori buku wajib dipilih.',
+            'penulis.required' => 'Nama penulis wajib diisi.',
+            'stok.required' => 'Jumlah stok fisik wajib diisi.',
+            'stok.numeric' => 'Jumlah stok fisik harus berupa angka.',
+            'stok.min' => 'Jumlah stok fisik minimal 0.',
+            'cover.image' => 'Berkas sampul harus berupa gambar (JPG, JPEG, PNG, atau WEBP).',
+            'cover.max' => 'Ukuran berkas sampul tidak boleh melebihi 10 MB.',
+        ];
+
+        $validated = $request->validate($rules, $messages);
+        $validated['category_id'] = (int) $validated['category_id'];
+        $validated['stok'] = (int) $validated['stok'];
 
         $oldCover = $book->getRawOriginal('cover');
 

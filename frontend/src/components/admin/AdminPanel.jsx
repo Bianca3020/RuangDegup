@@ -100,6 +100,7 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
   const [bookCoverExisting, setBookCoverExisting] = useState(null)
   const [bookCoverUrl, setBookCoverUrl] = useState('')
   const [coverInputMode, setCoverInputMode] = useState('file') // 'file' | 'url'
+  const [bookModalError, setBookModalError] = useState('')
   const bookCoverInputRef = useRef(null)
 
   // Clean up cover preview object URL
@@ -301,6 +302,7 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
     setModalType('book')
     setModalMode(mode)
     setSelectedItem(book)
+    setBookModalError('')
     setBookCoverFile(null)
     setBookCoverPreview(null)
     setBookCoverExisting(book?.cover ? getStorageUrl(book.cover) : null)
@@ -325,23 +327,18 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
 
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg']
     if (!allowedTypes.includes(file.type)) {
-      setFeedback({
-        type: 'error',
-        message: 'Format berkas sampul harus berupa gambar JPG, JPEG, PNG, atau WEBP.',
-      })
+      setBookModalError('Format berkas sampul harus berupa gambar JPG, JPEG, PNG, atau WEBP.')
       e.target.value = ''
       return
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      setFeedback({
-        type: 'error',
-        message: 'Ukuran file sampul tidak boleh melebihi 5 MB.',
-      })
+      setBookModalError('Ukuran berkas sampul tidak boleh melebihi 5 MB.')
       e.target.value = ''
       return
     }
 
+    setBookModalError('')
     setBookCoverFile(file)
     if (bookCoverPreview) {
       URL.revokeObjectURL(bookCoverPreview)
@@ -351,6 +348,7 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
   }
 
   function handleRemoveCoverSelection() {
+    setBookModalError('')
     setBookCoverFile(null)
     if (bookCoverPreview) {
       URL.revokeObjectURL(bookCoverPreview)
@@ -364,6 +362,7 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
   async function handleSaveBook(e) {
     e.preventDefault()
     setModalSubmitting(true)
+    setBookModalError('')
     try {
       const formData = new FormData()
       formData.append('judul', bookForm.judul)
@@ -398,6 +397,7 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
         const list = Object.values(err.errors).flat()
         if (list.length > 0) msg = list.join(' ')
       }
+      setBookModalError(msg)
       setFeedback({ type: 'error', message: msg })
     } finally {
       setModalSubmitting(false)
@@ -1706,6 +1706,13 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
                   disabled={modalSubmitting}
                 />
               </div>
+
+              {bookModalError && (
+                <div className="confirm-modal-error-banner" role="alert" style={{ marginBottom: '16px' }}>
+                  <AlertCircleIcon size={16} />
+                  <span>{bookModalError}</span>
+                </div>
+              )}
 
               <div className="admin-modal-actions">
                 <Button
