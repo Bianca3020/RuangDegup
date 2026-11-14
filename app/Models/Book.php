@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 class Book extends Model
 {
@@ -19,6 +21,23 @@ class Book extends Model
         'stok',
         'cover',
     ];
+
+    protected function cover(): Attribute
+    {
+        return Attribute::make(
+            get: function ($value) {
+                if (!$value) {
+                    return null;
+                }
+                if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
+                    return $value;
+                }
+                return app()->runningInConsole()
+                    ? Storage::disk('public')->url($value)
+                    : asset('storage/' . $value);
+            }
+        );
+    }
 
     public function category(): BelongsTo
     {

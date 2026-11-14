@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   BookOpenIcon,
   TagIcon,
@@ -14,6 +14,8 @@ import {
   FileTextIcon,
   SearchIcon,
   CloseIcon,
+  ImageIcon,
+  CameraIcon,
 } from '../common/Icons'
 import { Button } from '../common/Button'
 import {
@@ -76,6 +78,7 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
   const [modalMode, setModalMode] = useState('create') // 'create' | 'edit'
   const [selectedItem, setSelectedItem] = useState(null)
   const [modalSubmitting, setModalSubmitting] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState(null) // { type: 'book'|'category'|'member', item: object, submitting: boolean } | null
 
   // Form states
   const [categoryForm, setCategoryForm] = useState({ nama_kategori: '' })
@@ -87,9 +90,22 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
     tahun_terbit: '',
     isbn: '',
     stok: 1,
-    cover: '',
     deskripsi: '',
   })
+
+  // Book Cover Upload states
+  const [bookCoverFile, setBookCoverFile] = useState(null)
+  const [bookCoverPreview, setBookCoverPreview] = useState(null)
+  const [bookCoverExisting, setBookCoverExisting] = useState(null)
+  const bookCoverInputRef = useRef(null)
+
+  // Clean up cover preview object URL
+  useEffect(() => {
+    return () => {
+      if (bookCoverPreview) URL.revokeObjectURL(bookCoverPreview)
+    }
+  }, [bookCoverPreview])
+
   const [memberForm, setMemberForm] = useState({
     nama: '',
     tingkat: 'X',
@@ -108,13 +124,17 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
   // Close modal on Escape key
   useEffect(() => {
     function handleKeyDown(e) {
-      if (e.key === 'Escape' && modalType) {
-        setModalType(null)
+      if (e.key === 'Escape') {
+        if (deleteConfirm && !deleteConfirm.submitting) {
+          setDeleteConfirm(null)
+        } else if (modalType) {
+          setModalType(null)
+        }
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [modalType])
+  }, [modalType, deleteConfirm])
 
   /* ==========================================================================
      DATA LOADERS
@@ -227,14 +247,43 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
     }
   }
 
-  async function handleDeleteCategory(category) {
-    if (!window.confirm(`Hapus kategori "${category.nama_kategori}"?`)) return
+  function handleDeleteCategory(category) {
+    setDeleteConfirm({
+      type: 'category',
+      item: category,
+      title: 'Hapus Kategori Koleksi',
+      message: `Apakah Anda yakin ingin menghapus kategori "${category.nama_kategori}"? Kategori yang dihapus tidak dapat dipulihkan.`,
+      submitting: false,
+    })
+  }
+
+  async function handleConfirmDelete() {
+    if (!deleteConfirm || !deleteConfirm.item) return
+    setDeleteConfirm((prev) => ({ ...prev, submitting: true }))
+
     try {
-      const res = await deleteAdminCategory(category.id)
-      setFeedback({ type: 'success', message: res.message || 'Kategori berhasil dihapus.' })
-      loadCategories()
+      if (deleteConfirm.type === 'category') {
+        const res = await deleteAdminCategory(deleteConfirm.item.id)
+        setFeedback({ type: 'success', message: res.message || 'Kategori berhasil dihapus.' })
+        setDeleteConfirm(null)
+        loadCategories()
+        loadDashboardData()
+      } else if (deleteConfirm.type === 'book') {
+        const res = await deleteAdminBook(deleteConfirm.item.id)
+        setFeedback({ type: 'success', message: res.message || 'Buku berhasil dihapus.' })
+        setDeleteConfirm(null)
+        loadBooks()
+        loadDashboardData()
+      } else if (deleteConfirm.type === 'member') {
+        const res = await deleteAdminMember(deleteConfirm.item.id)
+        setFeedback({ type: 'success', message: res.message || 'Anggota berhasil dihapus.' })
+        setDeleteConfirm(null)
+        loadMembers()
+        loadDashboardData()
+      }
     } catch (err) {
-      setFeedback({ type: 'error', message: err.message || 'Gagal menghapus kategori.' })
+      setFeedback({ type: 'error', message: err.message || 'Gagal menghapus data.' })
+      setDeleteConfirm((prev) => ({ ...prev, submitting: false }))
     }
   }
 
@@ -243,9 +292,16 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
      ========================================================================== */
 
   function handleOpenBookModal(mode = 'create', book = null) {
+    if (bookCoverPreview) {
+      URL.revokeObjectURL(bookCoverPreview)
+    }
     setModalType('book')
     setModalMode(mode)
     setSelectedItem(book)
+    setBookCoverFile(null)
+    setBookCoverPreview(null)
+    setBookCoverExisting(book?.cover || null)
+
     setBookForm({
       judul: book ? book.judul : '',
       category_id: book ? (book.category_id || (book.category && book.category.id) || '') : (categories[0]?.id || ''),
@@ -254,45 +310,100 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
       tahun_terbit: book ? (book.tahun_terbit || '') : '',
       isbn: book ? (book.isbn || '') : '',
       stok: book ? (book.stok ?? 1) : 1,
-      cover: book ? (book.cover || '') : '',
       deskripsi: book ? (book.deskripsi || '') : '',
     })
+  }
+
+  function handleCoverFileChange(e) {
+    const file = e.target.files && e.target.files[0]
+    if (!file) return
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg']
+    if (!allowedTypes.includes(file.type)) {
+      setFeedback({
+        type: 'error',
+        message: 'Format berkas sampul harus berupa gambar JPG, JPEG, PNG, atau WEBP.',
+      })
+      e.target.value = ''
+      return
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setFeedback({
+        type: 'error',
+        message: 'Ukuran file sampul tidak boleh melebihi 2 MB.',
+      })
+      e.target.value = ''
+      return
+    }
+
+    setBookCoverFile(file)
+    if (bookCoverPreview) {
+      URL.revokeObjectURL(bookCoverPreview)
+    }
+    setBookCoverPreview(URL.createObjectURL(file))
+    setFeedback({ type: '', message: '' })
+  }
+
+  function handleRemoveCoverSelection() {
+    setBookCoverFile(null)
+    if (bookCoverPreview) {
+      URL.revokeObjectURL(bookCoverPreview)
+      setBookCoverPreview(null)
+    }
+    if (bookCoverInputRef.current) {
+      bookCoverInputRef.current.value = ''
+    }
   }
 
   async function handleSaveBook(e) {
     e.preventDefault()
     setModalSubmitting(true)
     try {
-      const payload = {
-        ...bookForm,
-        stok: Number(bookForm.stok),
-        tahun_terbit: bookForm.tahun_terbit ? Number(bookForm.tahun_terbit) : null,
+      const formData = new FormData()
+      formData.append('judul', bookForm.judul)
+      formData.append('category_id', String(bookForm.category_id))
+      formData.append('penulis', bookForm.penulis)
+      if (bookForm.penerbit) formData.append('penerbit', bookForm.penerbit)
+      if (bookForm.tahun_terbit) formData.append('tahun_terbit', String(bookForm.tahun_terbit))
+      if (bookForm.isbn) formData.append('isbn', bookForm.isbn)
+      formData.append('stok', String(Number(bookForm.stok)))
+      if (bookForm.deskripsi) formData.append('deskripsi', bookForm.deskripsi)
+
+      if (bookCoverFile) {
+        formData.append('cover', bookCoverFile)
       }
+
       if (modalMode === 'create') {
-        const res = await createAdminBook(payload)
-        setFeedback({ type: 'success', message: res.message || 'Buku berhasil ditambahkan.' })
+        const res = await createAdminBook(formData)
+        setFeedback({ type: 'success', message: res.message || 'Buku berhasil ditambahkan dengan sampul.' })
       } else {
-        const res = await updateAdminBook(selectedItem.id, payload)
+        const res = await updateAdminBook(selectedItem.id, formData)
         setFeedback({ type: 'success', message: res.message || 'Buku berhasil diperbarui.' })
       }
+      handleRemoveCoverSelection()
       setModalType(null)
       loadBooks()
     } catch (err) {
-      setFeedback({ type: 'error', message: err.message || 'Gagal menyimpan data buku.' })
+      let msg = err.message || 'Gagal menyimpan data buku.'
+      if (err.errors) {
+        const list = Object.values(err.errors).flat()
+        if (list.length > 0) msg = list.join(' ')
+      }
+      setFeedback({ type: 'error', message: msg })
     } finally {
       setModalSubmitting(false)
     }
   }
 
-  async function handleDeleteBook(book) {
-    if (!window.confirm(`Hapus buku "${book.judul}"?`)) return
-    try {
-      const res = await deleteAdminBook(book.id)
-      setFeedback({ type: 'success', message: res.message || 'Buku berhasil dihapus.' })
-      loadBooks()
-    } catch (err) {
-      setFeedback({ type: 'error', message: err.message || 'Gagal menghapus buku.' })
-    }
+  function handleDeleteBook(book) {
+    setDeleteConfirm({
+      type: 'book',
+      item: book,
+      title: 'Hapus Koleksi Buku',
+      message: `Apakah Anda yakin ingin menghapus buku "${book.judul}" (${book.penulis})? Berkas sampul dan data buku akan dihapus secara permanen.`,
+      submitting: false,
+    })
   }
 
   /* ==========================================================================
@@ -350,15 +461,14 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
     }
   }
 
-  async function handleDeleteMember(member) {
-    if (!window.confirm(`Hapus anggota "${member.nama}" (${member.nomor_anggota || '-'})?`)) return
-    try {
-      const res = await deleteAdminMember(member.id)
-      setFeedback({ type: 'success', message: res.message || 'Anggota berhasil dihapus.' })
-      loadMembers()
-    } catch (err) {
-      setFeedback({ type: 'error', message: err.message || 'Gagal menghapus anggota.' })
-    }
+  function handleDeleteMember(member) {
+    setDeleteConfirm({
+      type: 'member',
+      item: member,
+      title: 'Hapus Data Anggota Siswa',
+      message: `Apakah Anda yakin ingin menghapus anggota "${member.nama}" (${member.nomor_anggota || member.kelas || '-'})? Data siswa dan akun anggota terkait akan dihapus.`,
+      submitting: false,
+    })
   }
 
   /* ==========================================================================
@@ -387,6 +497,8 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
       setFeedback({ type: 'success', message: res.message || 'Peminjaman berhasil dicatat.' })
       setModalType(null)
       loadBorrowings()
+      loadBooks()
+      loadDashboardData()
     } catch (err) {
       setFeedback({ type: 'error', message: err.message || 'Gagal mencatat peminjaman.' })
     } finally {
@@ -409,6 +521,8 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
       setFeedback({ type: 'success', message: res.message || 'Pengembalian buku berhasil diproses.' })
       setModalType(null)
       loadBorrowings()
+      loadBooks()
+      loadDashboardData()
     } catch (err) {
       setFeedback({ type: 'error', message: err.message || 'Gagal memproses pengembalian buku.' })
     } finally {
@@ -472,9 +586,14 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
             <span className="admin-user-pill">
               Petugas: <strong>{currentUser?.name || 'Administrator'}</strong>
             </span>
-            <Button variant="outline" size="sm" onClick={onExitAdmin}>
-              Keluar ke Beranda
-            </Button>
+            <button
+              type="button"
+              className="admin-exit-btn"
+              onClick={onExitAdmin}
+              aria-label="Kembali ke halaman beranda publik"
+            >
+              <span>Keluar ke Beranda</span>
+            </button>
           </div>
         </div>
       </div>
@@ -790,7 +909,7 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
                               b.stok === 0 ? 'is-out' : b.stok < 3 ? 'is-low' : ''
                             }`}
                           >
-                            {b.stok} eks
+                            {b.stok} buku
                           </span>
                         </td>
                         <td style={{ textAlign: 'right' }}>
@@ -1285,7 +1404,10 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
               <button
                 type="button"
                 className="admin-modal-close"
-                onClick={() => setModalType(null)}
+                onClick={() => {
+                  handleRemoveCoverSelection()
+                  setModalType(null)
+                }}
                 aria-label="Tutup modal"
               >
                 <CloseIcon size={20} />
@@ -1417,18 +1539,88 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label" htmlFor="book-cover">
-                    URL Sampul / Cover
+                  <label className="form-label" htmlFor="book-cover-file">
+                    Berkas Sampul Buku (JPG, PNG, WEBP &bull; Maks. 2MB)
                   </label>
                   <input
-                    id="book-cover"
-                    type="url"
-                    placeholder="https://... (opsional)"
-                    className="form-input"
-                    value={bookForm.cover}
-                    onChange={(e) => setBookForm({ ...bookForm, cover: e.target.value })}
+                    ref={bookCoverInputRef}
+                    id="book-cover-file"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/jpg"
+                    style={{ display: 'none' }}
+                    onChange={handleCoverFileChange}
                     disabled={modalSubmitting}
                   />
+
+                  {bookCoverPreview ? (
+                    <div className="admin-cover-preview-card is-new">
+                      <img src={bookCoverPreview} alt="Pratinjau Sampul Baru" className="admin-cover-preview-thumb" />
+                      <div className="admin-cover-preview-info">
+                        <span className="admin-cover-pill admin-cover-pill--new">Berkas Baru Dipilih</span>
+                        <strong className="admin-cover-name">{bookCoverFile?.name}</strong>
+                        <span className="admin-cover-meta">
+                          {bookCoverFile ? (bookCoverFile.size / 1024).toFixed(1) : 0} KB
+                        </span>
+                        <div className="admin-cover-btn-group">
+                          <button
+                            type="button"
+                            className="admin-cover-action-btn"
+                            onClick={() => bookCoverInputRef.current?.click()}
+                            disabled={modalSubmitting}
+                          >
+                            <CameraIcon size={14} /> Ganti Gambar
+                          </button>
+                          <button
+                            type="button"
+                            className="admin-cover-action-btn admin-cover-action-btn--danger"
+                            onClick={handleRemoveCoverSelection}
+                            disabled={modalSubmitting}
+                          >
+                            <CloseIcon size={14} /> Batalkan Pilihan
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : bookCoverExisting ? (
+                    <div className="admin-cover-preview-card">
+                      <img src={bookCoverExisting} alt="Sampul Saat Ini" className="admin-cover-preview-thumb" />
+                      <div className="admin-cover-preview-info">
+                        <span className="admin-cover-pill">Sampul Saat Ini</span>
+                        <span className="admin-cover-hint">
+                          Sampul ini tetap digunakan jika Anda tidak memilih pengganti.
+                        </span>
+                        <div className="admin-cover-btn-group">
+                          <button
+                            type="button"
+                            className="admin-cover-action-btn"
+                            onClick={() => bookCoverInputRef.current?.click()}
+                            disabled={modalSubmitting}
+                          >
+                            <CameraIcon size={14} /> Ganti dengan Gambar Baru
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      className="admin-cover-dropzone"
+                      onClick={() => bookCoverInputRef.current?.click()}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          bookCoverInputRef.current?.click()
+                        }
+                      }}
+                    >
+                      <ImageIcon size={26} className="admin-cover-dropzone__icon" />
+                      <div className="admin-cover-dropzone__body">
+                        <strong>Pilih Berkas Sampul</strong>
+                        <span>Klik untuk memilih berkas dari perangkat Anda</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1452,7 +1644,10 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
                   type="button"
                   variant="outline"
                   size="md"
-                  onClick={() => setModalType(null)}
+                  onClick={() => {
+                    handleRemoveCoverSelection()
+                    setModalType(null)
+                  }}
                   disabled={modalSubmitting}
                 >
                   Batal
@@ -1771,6 +1966,49 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* CUSTOM DELETE CONFIRMATION MODAL */}
+      {deleteConfirm && (
+        <div className="admin-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="delete-dialog-title">
+          <div className="admin-modal-card admin-confirm-dialog">
+            <div className="admin-confirm-header">
+              <span className="admin-confirm-icon" aria-hidden="true">
+                <AlertCircleIcon size={24} />
+              </span>
+              <div>
+                <h3 className="admin-confirm-title" id="delete-dialog-title">
+                  {deleteConfirm.title}
+                </h3>
+                <p className="admin-confirm-sub">Konfirmasi Tindakan Admin</p>
+              </div>
+            </div>
+
+            <div className="admin-confirm-body">
+              <p>{deleteConfirm.message}</p>
+            </div>
+
+            <div className="admin-confirm-actions">
+              <Button
+                type="button"
+                variant="outline"
+                size="md"
+                onClick={() => setDeleteConfirm(null)}
+                disabled={deleteConfirm.submitting}
+              >
+                Batalkan
+              </Button>
+              <button
+                type="button"
+                className="admin-confirm-delete-btn"
+                onClick={handleConfirmDelete}
+                disabled={deleteConfirm.submitting}
+              >
+                {deleteConfirm.submitting ? 'Menghapus...' : 'Ya, Hapus Data'}
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Book;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class BookController extends Controller
 {
@@ -41,7 +42,7 @@ class BookController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $rules = [
             'category_id' => 'required|exists:categories,id',
             'judul' => 'required|string|max:255',
             'penulis' => 'required|string|max:255',
@@ -50,14 +51,27 @@ class BookController extends Controller
             'isbn' => 'nullable|string|max:255',
             'deskripsi' => 'nullable|string',
             'stok' => 'required|integer|min:0',
-            'cover' => 'nullable|string|max:255',
-        ]);
+        ];
+
+        if ($request->hasFile('cover')) {
+            $rules['cover'] = 'required|image|mimes:jpg,jpeg,png,webp|max:2048';
+        } else {
+            $rules['cover'] = 'nullable';
+        }
+
+        $validated = $request->validate($rules);
+
+        if ($request->hasFile('cover')) {
+            $validated['cover'] = $request->file('cover')->store('books/covers', 'public');
+        } else {
+            unset($validated['cover']);
+        }
 
         $book = Book::create($validated);
 
         return response()->json([
             'message' => 'Buku berhasil ditambahkan',
-            'data' => $book,
+            'data' => $book->load('category'),
         ], 201);
     }
 
@@ -70,7 +84,7 @@ class BookController extends Controller
 
     public function update(Request $request, Book $book)
     {
-        $validated = $request->validate([
+        $rules = [
             'category_id' => 'required|exists:categories,id',
             'judul' => 'required|string|max:255',
             'penulis' => 'required|string|max:255',
@@ -79,14 +93,34 @@ class BookController extends Controller
             'isbn' => 'nullable|string|max:255',
             'deskripsi' => 'nullable|string',
             'stok' => 'required|integer|min:0',
-            'cover' => 'nullable|string|max:255',
-        ]);
+        ];
+
+        if ($request->hasFile('cover')) {
+            $rules['cover'] = 'required|image|mimes:jpg,jpeg,png,webp|max:2048';
+        }
+
+        $validated = $request->validate($rules);
+
+        $oldCover = $book->getRawOriginal('cover');
+
+        if ($request->hasFile('cover')) {
+            $validated['cover'] = $request->file('cover')->store('books/covers', 'public');
+        } else {
+            // Keep existing cover if not replaced
+            unset($validated['cover']);
+        }
 
         $book->update($validated);
 
+        if ($request->hasFile('cover') && $oldCover && $oldCover !== $validated['cover']) {
+            if (!str_starts_with($oldCover, 'http') && Storage::disk('public')->exists($oldCover)) {
+                Storage::disk('public')->delete($oldCover);
+            }
+        }
+
         return response()->json([
             'message' => 'Buku berhasil diperbarui',
-            'data' => $book,
+            'data' => $book->load('category'),
         ]);
     }
 
@@ -98,7 +132,13 @@ class BookController extends Controller
             ], 422);
         }
 
+        $oldCover = $book->getRawOriginal('cover');
+
         $book->delete();
+
+        if ($oldCover && !str_starts_with($oldCover, 'http') && Storage::disk('public')->exists($oldCover)) {
+            Storage::disk('public')->delete($oldCover);
+        }
 
         return response()->json([
             'message' => 'Buku berhasil dihapus',
