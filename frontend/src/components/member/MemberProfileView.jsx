@@ -21,6 +21,7 @@ import {
   deleteMemberPhoto,
   deleteMemberBackground,
   updateMemberPassword,
+  getStorageUrl,
 } from '../../services/api'
 
 export function MemberProfileView({ currentUser, onBackToDashboard, onProfileUpdated }) {
@@ -89,11 +90,11 @@ export function MemberProfileView({ currentUser, onBackToDashboard, onProfileUpd
     const file = e.target.files && e.target.files[0]
     if (!file) return
 
-    // Validations (max 1024 KB = 1MB)
-    if (file.size > 1024 * 1024) {
+    // Validations (max 5120 KB = 5MB)
+    if (file.size > 5 * 1024 * 1024) {
       setFeedback({
         type: 'error',
-        message: 'Ukuran foto profil tidak boleh melebihi 1 MB.',
+        message: 'Ukuran foto profil tidak boleh melebihi 5 MB.',
       })
       e.target.value = ''
       return
@@ -118,11 +119,11 @@ export function MemberProfileView({ currentUser, onBackToDashboard, onProfileUpd
     const file = e.target.files && e.target.files[0]
     if (!file) return
 
-    // Validations (max 2048 KB = 2MB)
-    if (file.size > 2 * 1024 * 1024) {
+    // Validations (max 5120 KB = 5MB)
+    if (file.size > 5 * 1024 * 1024) {
       setFeedback({
         type: 'error',
-        message: 'Ukuran gambar latar belakang tidak boleh melebihi 2 MB.',
+        message: 'Ukuran gambar latar belakang tidak boleh melebihi 5 MB.',
       })
       e.target.value = ''
       return
@@ -326,8 +327,8 @@ export function MemberProfileView({ currentUser, onBackToDashboard, onProfileUpd
     )
   }
 
-  const effectiveBackground = backgroundPreview || profile?.profile_background
-  const effectivePhoto = photoPreview || profile?.profile_photo
+  const effectiveBackground = backgroundPreview || getStorageUrl(profile?.profile_background)
+  const effectivePhoto = photoPreview || getStorageUrl(profile?.profile_photo)
 
   return (
     <div className="profile-view" aria-label="Profil dan Pengaturan Anggota">
@@ -403,7 +404,7 @@ export function MemberProfileView({ currentUser, onBackToDashboard, onProfileUpd
                 type="button"
                 className="cover-action-btn"
                 onClick={() => backgroundInputRef.current?.click()}
-                title="Pilih gambar latar belakang (maks. 2MB)"
+                title="Pilih gambar latar belakang (maks. 5MB)"
               >
                 <ImageIcon size={16} />
                 <span>{effectiveBackground ? 'Ganti Sampul' : 'Tambah Sampul'}</span>
@@ -450,7 +451,7 @@ export function MemberProfileView({ currentUser, onBackToDashboard, onProfileUpd
                 type="button"
                 className="avatar-edit-badge"
                 onClick={() => photoInputRef.current?.click()}
-                title="Unggah foto profil (maks. 1MB)"
+                title="Unggah foto profil (maks. 5MB)"
                 aria-label="Ubah foto profil"
               >
                 <CameraIcon size={16} />

@@ -14,15 +14,36 @@
 }
 
 .notice-bar {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 99999;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 10px max(5%, calc((100vw - 1200px) / 2));
+  padding: 12px 24px;
   background-color: var(--plum);
   color: var(--cream);
   font-size: 13px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-full);
+  box-shadow: 0 10px 30px rgba(51, 27, 63, 0.45);
+  max-width: min(540px, calc(100vw - 32px));
+  width: max-content;
+  animation: slideDownToast 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideDownToast {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -24px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
 }
 
 .notice-bar span {

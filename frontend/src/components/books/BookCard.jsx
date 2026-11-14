@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { HeartIcon, ArrowUpRight } from '../common/Icons'
+import { getStorageUrl } from '../../services/api'
 
 export function BookCard({ book, onSelectBook, onBorrow, onToggleFavorite, isFavorite = false }) {
   const [imgError, setImgError] = useState(false)
@@ -14,7 +15,7 @@ export function BookCard({ book, onSelectBook, onBorrow, onToggleFavorite, isFav
       <div className="book-card__cover-wrapper">
         {hasCover ? (
           <img
-            src={book.cover}
+            src={getStorageUrl(book.cover)}
             alt={`Cover buku ${book.judul}`}
             className="book-card__image"
             onError={() => setImgError(true)}

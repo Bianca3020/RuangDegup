@@ -203,9 +203,8 @@ function App() {
     setBorrowLoading(true)
     try {
       const res = await borrowBook(book.id)
-      setNotice(
-        res.message || `Buku "${book.judul}" berhasil dipinjam! Silakan periksa di dashboard anggota Anda.`
-      )
+      const successMsg = res.message || `Buku "${book.judul}" berhasil dipinjam! Silakan periksa di dashboard anggota Anda.`
+      setNotice(successMsg)
       // If modal is open for this book, decrement local stock count
       if (selectedBook && selectedBook.id === book.id) {
         setSelectedBook((prev) => ({
@@ -213,8 +212,11 @@ function App() {
           stok: Math.max(0, Number(prev.stok) - 1),
         }))
       }
+      return res
     } catch (err) {
-      setNotice(err.message || 'Gagal memproses peminjaman buku.')
+      const errMsg = err.message || 'Gagal memproses peminjaman buku.'
+      setNotice(errMsg)
+      throw err
     } finally {
       setBorrowLoading(false)
     }

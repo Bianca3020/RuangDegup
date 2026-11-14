@@ -51,8 +51,8 @@ class MemberProfileController extends Controller
             'no_hp' => 'nullable|string|max:20',
             'alamat' => 'nullable|string|max:500',
             'bio' => 'nullable|string|max:1000',
-            'profile_photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:1024',
-            'profile_background' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'profile_photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+            'profile_background' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
         ]);
 
         $oldPhoto = $member->profile_photo;

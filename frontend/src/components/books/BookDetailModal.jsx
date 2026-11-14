@@ -8,7 +8,7 @@ import {
   InfoIcon,
 } from '../common/Icons'
 import { Button } from '../common/Button'
-import { createReview } from '../../services/api'
+import { createReview, getStorageUrl } from '../../services/api'
 
 export function BookDetailModal({
   book,
@@ -27,6 +27,25 @@ export function BookDetailModal({
   const [reviewLoading, setReviewLoading] = useState(false)
   const [reviewError, setReviewError] = useState('')
   const [reviewSuccess, setReviewSuccess] = useState('')
+  const [borrowSuccess, setBorrowSuccess] = useState('')
+  const [borrowError, setBorrowError] = useState('')
+
+  async function handleInternalBorrow() {
+    if (!currentUser) {
+      if (onRequireLogin) onRequireLogin(`meminjam buku "${book.judul}"`)
+      return
+    }
+    setBorrowError('')
+    setBorrowSuccess('')
+    try {
+      if (onBorrow) {
+        const res = await onBorrow(book)
+        setBorrowSuccess(res?.message || `Buku "${book.judul}" berhasil dipinjam! Silakan periksa di Ruang Anggota.`)
+      }
+    } catch (err) {
+      setBorrowError(err.message || 'Gagal memproses peminjaman buku.')
+    }
+  }
 
   // Handle Escape key
   useEffect(() => {
@@ -108,7 +127,7 @@ export function BookDetailModal({
             <div className="modal-cover-wrapper">
               {hasCover ? (
                 <img
-                  src={book.cover}
+                  src={getStorageUrl(book.cover)}
                   alt={`Sampul buku ${book.judul}`}
                   className="modal-cover-img"
                   onError={() => setImgError(true)}
@@ -206,16 +225,34 @@ export function BookDetailModal({
 
             {/* BORROW CTA ACTION */}
             <div className="modal-borrow-section">
+              {borrowSuccess && (
+                <div className="alert-message alert-message--success" style={{ marginBottom: '14px' }}>
+                  <CheckIcon size={16} />
+                  <span>{borrowSuccess}</span>
+                </div>
+              )}
+
+              {borrowError && (
+                <div className="alert-message alert-message--error" style={{ marginBottom: '14px' }}>
+                  <InfoIcon size={16} />
+                  <span>{borrowError}</span>
+                </div>
+              )}
+
               {currentUser ? (
                 <Button
                   variant="primary"
                   size="lg"
-                  disabled={!isAvailable}
+                  disabled={!isAvailable || !!borrowSuccess}
                   loading={borrowLoading}
-                  onClick={() => onBorrow && onBorrow(book)}
+                  onClick={handleInternalBorrow}
                   className="modal-borrow-btn"
                 >
-                  {isAvailable ? 'Pinjam Buku Ini Sekarang' : 'Stok Buku Sedang Kosong'}
+                  {borrowSuccess
+                    ? '✓ Berhasil Dipinjam'
+                    : isAvailable
+                    ? 'Pinjam Buku Ini Sekarang'
+                    : 'Stok Buku Sedang Kosong'}
                 </Button>
               ) : (
                 <div className="modal-guest-prompt">

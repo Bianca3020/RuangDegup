@@ -11,9 +11,10 @@ import {
   ArrowUpRight,
   RefreshIcon,
   CloseIcon,
+  TrashIcon,
 } from '../common/Icons'
 import { Button } from '../common/Button'
-import { getMemberDashboard, removeFavorite } from '../../services/api'
+import { getMemberDashboard, removeFavorite, deleteReview, getStorageUrl } from '../../services/api'
 
 export function MemberDashboard({
   currentUser,
@@ -55,6 +56,18 @@ export function MemberDashboard({
       loadDashboard()
     } catch (err) {
       setActionNotice(err.message || 'Gagal menghapus buku dari favorit.')
+    }
+  }
+
+  // Delete a review directly from the dashboard
+  async function handleDeleteReview(reviewId, bookTitle) {
+    if (!window.confirm(`Hapus ulasan Anda untuk buku "${bookTitle}"?`)) return
+    try {
+      await deleteReview(reviewId)
+      setActionNotice(`Ulasan untuk buku "${bookTitle}" berhasil dihapus.`)
+      loadDashboard()
+    } catch (err) {
+      setActionNotice(err.message || 'Gagal menghapus ulasan.')
     }
   }
 
@@ -134,7 +147,7 @@ export function MemberDashboard({
             <div className="dash-hero__identity">
               <div className="dash-hero__avatar">
                 {profile?.profile_photo ? (
-                  <img src={profile.profile_photo} alt={profile.nama} />
+                  <img src={getStorageUrl(profile.profile_photo)} alt={profile.nama} />
                 ) : (
                   <UserIcon size={32} />
                 )}
@@ -309,7 +322,7 @@ export function MemberDashboard({
                     <article key={borrowing.id} className="borrow-card">
                       <div className="borrow-card__cover">
                         {book.cover ? (
-                          <img src={book.cover} alt={book.judul} />
+                          <img src={getStorageUrl(book.cover)} alt={book.judul} />
                         ) : (
                           <div className="borrow-card__fallback">
                             <span>r.</span>
@@ -388,7 +401,7 @@ export function MemberDashboard({
                     <article key={borrowing.id} className="borrow-card borrow-card--returned">
                       <div className="borrow-card__cover">
                         {book.cover ? (
-                          <img src={book.cover} alt={book.judul} />
+                          <img src={getStorageUrl(book.cover)} alt={book.judul} />
                         ) : (
                           <div className="borrow-card__fallback">
                             <span>r.</span>
@@ -469,7 +482,7 @@ export function MemberDashboard({
                     <div key={fav.id} className="fav-item">
                       <div className="fav-item__cover">
                         {book.cover ? (
-                          <img src={book.cover} alt={book.judul} />
+                          <img src={getStorageUrl(book.cover)} alt={book.judul} />
                         ) : (
                           <div className="fav-item__fallback">r.</div>
                         )}
@@ -568,6 +581,16 @@ export function MemberDashboard({
                             year: 'numeric',
                           }) : ''}
                         </span>
+                        <button
+                          type="button"
+                          className="review-delete-btn"
+                          onClick={() => handleDeleteReview(rev.id, book.judul)}
+                          title="Hapus ulasan ini"
+                          aria-label={`Hapus ulasan untuk ${book.judul}`}
+                        >
+                          <TrashIcon size={13} />
+                          <span>Hapus</span>
+                        </button>
                       </div>
                     </article>
                   )

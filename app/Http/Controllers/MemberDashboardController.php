@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class MemberDashboardController extends Controller
 {
@@ -79,8 +80,12 @@ class MemberDashboardController extends Controller
                 'nama' => $member->nama,
                 'kelas' => $member->kelas,
                 'bio' => $member->bio,
-                'profile_photo' => $member->profile_photo,
-                'profile_background' => $member->profile_background,
+                'profile_photo' => $member->profile_photo
+                    ? Storage::disk('public')->url($member->profile_photo)
+                    : null,
+                'profile_background' => $member->profile_background
+                    ? Storage::disk('public')->url($member->profile_background)
+                    : null,
             ],
 
             'summary' => [

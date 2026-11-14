@@ -4,6 +4,40 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000
 export const TOKEN_KEY = 'ruangdegup_token'
 export const USER_KEY = 'ruangdegup_user'
 
+/**
+ * Resolves storage URLs from backend, fixing localhost references in production
+ */
+export function getStorageUrl(path) {
+  if (!path) return null
+  if (path.startsWith('blob:') || path.startsWith('data:')) return path
+
+  const apiOrigin = API_BASE_URL.replace(/\/api\/?$/, '')
+
+  // Fix localhost / 127.0.0.1 domain coming from server
+  if (path.includes('localhost') || path.includes('127.0.0.1')) {
+    const storagePath = path.replace(/^https?:\/\/[^/]+/, '')
+    return `${apiOrigin}${storagePath.startsWith('/') ? '' : '/'}${storagePath}`
+  }
+
+  if (path.startsWith('/storage/')) {
+    return `${apiOrigin}${path}`
+  }
+
+  if (path.startsWith('storage/')) {
+    return `${apiOrigin}/${path}`
+  }
+
+  if (path.startsWith('profiles/') || path.startsWith('books/')) {
+    return `${apiOrigin}/storage/${path}`
+  }
+
+  if (path.startsWith('/')) {
+    return `${apiOrigin}${path}`
+  }
+
+  return path
+}
+
 export function getStoredToken() {
   try {
     return localStorage.getItem(TOKEN_KEY)
