@@ -10,7 +10,7 @@ class BookController extends Controller
 {
     public function index()
     {
-        $books = Book::with('category')
+        $books = Book::with(['category', 'reviews.member'])
             ->orderBy('judul')
             ->get();
 
@@ -19,7 +19,7 @@ class BookController extends Controller
 
     public function catalog(Request $request)
     {
-        $query = Book::with('category')
+        $query = Book::with(['category', 'reviews.member'])
             ->orderBy('judul');
 
         if ($request->filled('search')) {
@@ -42,7 +42,7 @@ class BookController extends Controller
 
     public function newArrivals()
     {
-        $books = Book::with('category')
+        $books = Book::with(['category', 'reviews.member'])
             ->latest('created_at')
             ->take(6)
             ->get();

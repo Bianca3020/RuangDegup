@@ -32,6 +32,17 @@ export function BookDetailModal({
   const [borrowSuccess, setBorrowSuccess] = useState('')
   const [borrowError, setBorrowError] = useState('')
   const [showBorrowConfirm, setShowBorrowConfirm] = useState(false)
+  const [reviewsList, setReviewsList] = useState(() => Array.isArray(book?.reviews) ? book.reviews : [])
+
+  useEffect(() => {
+    if (Array.isArray(book?.reviews)) {
+      setReviewsList(book.reviews)
+    }
+  }, [book])
+
+  const avgRating = reviewsList.length > 0
+    ? (reviewsList.reduce((acc, r) => acc + (Number(r.rating) || 0), 0) / reviewsList.length).toFixed(1)
+    : null
 
   async function handleInternalBorrow() {
     if (!currentUser) {
@@ -90,14 +101,22 @@ export function BookDetailModal({
         rating: Number(rating),
         ulasan: ulasan.trim() || null,
       })
+      const newReviewItem = {
+        id: res?.data?.id || Date.now(),
+        rating: Number(rating),
+        ulasan: ulasan.trim() || '',
+        created_at: new Date().toISOString(),
+        member: {
+          nama: currentUser?.member?.nama || currentUser?.name || 'Anda',
+          kelas: currentUser?.member?.kelas || ''
+        }
+      }
+      setReviewsList((prev) => [newReviewItem, ...prev.filter((r) => r.id !== newReviewItem.id)])
       setReviewSuccess('Ulasan Anda berhasil dikirimkan. Terima kasih atas apresiasinya!')
       setUlasan('')
       if (onReviewSubmitted) {
         onReviewSubmitted(res?.data || res)
       }
-      setTimeout(() => {
-        if (onClose) onClose()
-      }, 1000)
     } catch (err) {
       setReviewError(
         err.message || 'Gagal mengirimkan review. Pastikan Anda belum pernah mereview buku ini.'
@@ -277,6 +296,82 @@ export function BookDetailModal({
                     Masuk Akun
                   </Button>
                 </div>
+              )}
+            </div>
+
+            {/* EXISTING REVIEWS LIST */}
+            <div className="modal-reviews-list-section" style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid rgba(61, 35, 47, 0.08)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                <h4 className="modal-section-heading" style={{ margin: 0 }}>
+                  Ulasan & Apresiasi Pembaca ({reviewsList.length})
+                </h4>
+                {avgRating && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-plum)' }}>
+                    <StarIcon size={16} filled={true} style={{ color: '#D97706' }} />
+                    <span>{avgRating} / 5.0</span>
+                  </div>
+                )}
+              </div>
+
+              {reviewsList.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '200px', overflowY: 'auto', paddingRight: '4px', marginBottom: '16px' }}>
+                  {reviewsList.map((r, idx) => (
+                    <div
+                      key={r.id || idx}
+                      style={{
+                        background: 'var(--color-cream-light, #FAF7F2)',
+                        borderRadius: '10px',
+                        padding: '12px 14px',
+                        border: '1px solid rgba(61, 35, 47, 0.06)'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div
+                            style={{
+                              width: '28px',
+                              height: '28px',
+                              borderRadius: '50%',
+                              background: 'var(--color-plum)',
+                              color: '#fff',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '0.75rem',
+                              fontWeight: 700
+                            }}
+                          >
+                            {(r.member?.nama || 'M').charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-plum)' }}>
+                              {r.member?.nama || 'Anggota Siswa'}
+                            </span>
+                            {r.member?.kelas && (
+                              <span style={{ fontSize: '0.75rem', color: '#6B7280', marginLeft: '6px' }}>
+                                • {r.member.kelas}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '2px' }}>
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <StarIcon key={s} size={13} filled={s <= Number(r.rating)} style={{ color: s <= Number(r.rating) ? '#D97706' : '#D1D5DB' }} />
+                          ))}
+                        </div>
+                      </div>
+                      {r.ulasan && (
+                        <p style={{ margin: 0, fontSize: '0.825rem', color: '#374151', lineHeight: 1.5, fontStyle: 'italic' }}>
+                          "{r.ulasan}"
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ fontSize: '0.825rem', color: '#6B7280', fontStyle: 'italic', margin: '4px 0 16px' }}>
+                  Belum ada ulasan untuk buku ini. Jadilah pembaca pertama yang memberikan ulasan!
+                </p>
               )}
             </div>
 
