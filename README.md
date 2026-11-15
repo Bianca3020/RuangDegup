@@ -28,7 +28,7 @@ Penguji / Guru dapat menggunakan kredensial berikut untuk menguji masing-masing 
 | Peran | Email | Kata Sandi | Keterangan Akses |
 | :--- | :--- | :--- | :--- |
 | **Admin (Petugas)** | `admin@ruangdegup.com` | `admin123` | Akses penuh Dashboard Admin, CRUD Buku, Kategori, Anggota Siswa, Peminjaman, Ekspor Laporan PDF, & Quotes Footer. |
-| **Member (Siswa)** | `bianca@gmail.com` *(atau daftar akun baru)* | `password123` | Akses Ruang Anggota, pinjam buku fisik, kembalikan buku mandiri, simpan rak favorit, & tulis ulasan. |
+| **Member (Siswa)** | `bianca@ruangdegup.local` | `RuangDegup123!` | Akses Ruang Anggota, pinjam buku fisik, kembalikan buku mandiri, simpan rak favorit, & tulis ulasan. |
 
 > **Catatan:** Pengguna umum juga dapat langsung membuat akun Member siswa baru melalui tombol **Daftar** di modal login.
 
