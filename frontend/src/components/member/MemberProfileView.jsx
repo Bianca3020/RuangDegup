@@ -56,6 +56,16 @@ export function MemberProfileView({ currentUser, onBackToDashboard, onProfileUpd
   const photoInputRef = useRef(null)
   const backgroundInputRef = useRef(null)
 
+  // Auto-dismiss success notification after 4 seconds
+  useEffect(() => {
+    if (feedback.message && feedback.type === 'success') {
+      const timer = setTimeout(() => {
+        setFeedback({ type: '', message: '' })
+      }, 4000)
+      return () => clearTimeout(timer)
+    }
+  }, [feedback])
+
   const loadProfile = useCallback(async () => {
     setLoading(true)
     setError(null)

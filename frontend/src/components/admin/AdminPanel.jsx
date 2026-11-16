@@ -64,6 +64,16 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
   const [loading, setLoading] = useState(false)
   const [feedback, setFeedback] = useState({ type: '', message: '' })
 
+  // Auto-dismiss success notification after 4 seconds
+  useEffect(() => {
+    if (feedback.message && feedback.type === 'success') {
+      const timer = setTimeout(() => {
+        setFeedback({ type: '', message: '' })
+      }, 4000)
+      return () => clearTimeout(timer)
+    }
+  }, [feedback])
+
   // Dashboard Data
   const [dashboardStats, setDashboardStats] = useState(null)
 

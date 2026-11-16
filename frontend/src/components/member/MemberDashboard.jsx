@@ -34,6 +34,15 @@ export function MemberDashboard({
   const [confirmLoading, setConfirmLoading] = useState(false)
   const [confirmError, setConfirmError] = useState('')
 
+  // Auto-dismiss action notice after 4 seconds
+  useEffect(() => {
+    if (!actionNotice) return
+    const timer = setTimeout(() => {
+      setActionNotice('')
+    }, 4000)
+    return () => clearTimeout(timer)
+  }, [actionNotice])
+
   const loadDashboard = useCallback(async () => {
     setLoading(true)
     setError(null)
