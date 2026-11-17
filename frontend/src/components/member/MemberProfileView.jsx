@@ -629,9 +629,12 @@ export function MemberProfileView({ currentUser, onBackToDashboard, onProfileUpd
                   <input
                     id="member-no-hp"
                     type="tel"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={20}
                     className="form-input"
                     value={noHp}
-                    onChange={(e) => setNoHp(e.target.value)}
+                    onChange={(e) => setNoHp(e.target.value.replace(/\D/g, ''))}
                     placeholder="Contoh: 08123456789"
                     disabled={saving}
                   />

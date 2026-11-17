@@ -20,8 +20,10 @@ class MemberController extends Controller
             'nama' => 'required|string|max:255',
             'kelas' => 'nullable|string|max:255',
             'alamat' => 'nullable|string',
-            'no_hp' => 'nullable|string|max:255',
+            'no_hp' => 'nullable|regex:/^[0-9]+$/|max:20',
             'tanggal_daftar' => 'nullable|date',
+        ], [
+            'no_hp.regex' => 'Nomor telepon hanya boleh berisi angka.',
         ]);
 
         $member = Member::create($validated);
@@ -47,8 +49,10 @@ class MemberController extends Controller
             'nama' => 'required|string|max:255',
             'kelas' => 'nullable|string|max:255',
             'alamat' => 'nullable|string',
-            'no_hp' => 'nullable|string|max:255',
+            'no_hp' => 'nullable|regex:/^[0-9]+$/|max:20',
             'tanggal_daftar' => 'nullable|date',
+        ], [
+            'no_hp.regex' => 'Nomor telepon hanya boleh berisi angka.',
         ]);
 
         $member->update($validated);

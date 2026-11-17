@@ -57,10 +57,10 @@ class BookController extends Controller
             'judul' => 'required|string|max:255',
             'penulis' => 'required|string|max:255',
             'penerbit' => 'nullable|string|max:255',
-            'tahun_terbit' => 'nullable',
-            'isbn' => 'nullable|string|max:255',
+            'tahun_terbit' => 'nullable|digits:4|integer|min:1000|max:' . date('Y'),
+            'isbn' => 'nullable|regex:/^[0-9-]+$/|max:255',
             'deskripsi' => 'nullable|string',
-            'stok' => 'required|numeric|min:0',
+            'stok' => 'required|integer|min:0',
         ];
 
         if ($request->hasFile('cover')) {
@@ -74,8 +74,11 @@ class BookController extends Controller
             'category_id.required' => 'Kategori buku wajib dipilih.',
             'penulis.required' => 'Nama penulis wajib diisi.',
             'stok.required' => 'Jumlah stok fisik wajib diisi.',
-            'stok.numeric' => 'Jumlah stok fisik harus berupa angka.',
+            'stok.integer' => 'Jumlah stok fisik harus berupa angka bulat.',
             'stok.min' => 'Jumlah stok fisik minimal 0.',
+            'tahun_terbit.digits' => 'Tahun terbit harus terdiri dari 4 angka.',
+            'tahun_terbit.integer' => 'Tahun terbit harus berupa angka.',
+            'isbn.regex' => 'ISBN hanya boleh berisi angka dan tanda hubung (-).',
             'cover.image' => 'Berkas sampul harus berupa gambar (JPG, JPEG, PNG, WEBP, atau GIF).',
             'cover.max' => 'Ukuran berkas sampul tidak boleh melebihi 10 MB.',
         ];
@@ -116,10 +119,10 @@ class BookController extends Controller
             'judul' => 'required|string|max:255',
             'penulis' => 'required|string|max:255',
             'penerbit' => 'nullable|string|max:255',
-            'tahun_terbit' => 'nullable',
-            'isbn' => 'nullable|string|max:255',
+            'tahun_terbit' => 'nullable|digits:4|integer|min:1000|max:' . date('Y'),
+            'isbn' => 'nullable|regex:/^[0-9-]+$/|max:255',
             'deskripsi' => 'nullable|string',
-            'stok' => 'required|numeric|min:0',
+            'stok' => 'required|integer|min:0',
         ];
 
         if ($request->hasFile('cover')) {
@@ -133,8 +136,11 @@ class BookController extends Controller
             'category_id.required' => 'Kategori buku wajib dipilih.',
             'penulis.required' => 'Nama penulis wajib diisi.',
             'stok.required' => 'Jumlah stok fisik wajib diisi.',
-            'stok.numeric' => 'Jumlah stok fisik harus berupa angka.',
+            'stok.integer' => 'Jumlah stok fisik harus berupa angka bulat.',
             'stok.min' => 'Jumlah stok fisik minimal 0.',
+            'tahun_terbit.digits' => 'Tahun terbit harus terdiri dari 4 angka.',
+            'tahun_terbit.integer' => 'Tahun terbit harus berupa angka.',
+            'isbn.regex' => 'ISBN hanya boleh berisi angka dan tanda hubung (-).',
             'cover.image' => 'Berkas sampul harus berupa gambar (JPG, JPEG, PNG, WEBP, atau GIF).',
             'cover.max' => 'Ukuran berkas sampul tidak boleh melebihi 10 MB.',
         ];

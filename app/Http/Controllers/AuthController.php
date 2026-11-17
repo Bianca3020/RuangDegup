@@ -18,7 +18,9 @@ class AuthController extends Controller
             'password' => 'required|string|min:8|confirmed',
             'kelas' => 'nullable|string|max:255',
             'alamat' => 'nullable|string',
-            'no_hp' => 'nullable|string|max:255',
+            'no_hp' => 'nullable|regex:/^[0-9]+$/|max:20',
+        ], [
+            'no_hp.regex' => 'Nomor telepon hanya boleh berisi angka.',
         ]);
 
         $result = DB::transaction(function () use ($validated) {

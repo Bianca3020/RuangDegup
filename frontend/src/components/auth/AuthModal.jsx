@@ -588,11 +588,14 @@ export function AuthModal({
               <input
                 id="reg-phone"
                 type="tel"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={20}
                 className="form-input form-input--plain"
                 placeholder="0812xxxxxxxx"
                 value={registerData.no_hp}
                 onChange={(e) =>
-                  setRegisterData({ ...registerData, no_hp: e.target.value })
+                  setRegisterData({ ...registerData, no_hp: e.target.value.replace(/\D/g, '') })
                 }
               />
             </div>

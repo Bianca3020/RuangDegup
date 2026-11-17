@@ -48,11 +48,13 @@ class MemberProfileController extends Controller
 
         $validated = $request->validate([
             'nama' => 'sometimes|required|string|max:255',
-            'no_hp' => 'nullable|string|max:20',
+            'no_hp' => 'nullable|regex:/^[0-9]+$/|max:20',
             'alamat' => 'nullable|string|max:500',
             'bio' => 'nullable|string|max:1000',
             'profile_photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
             'profile_background' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+        ], [
+            'no_hp.regex' => 'Nomor telepon hanya boleh berisi angka.',
         ]);
 
         $oldPhoto = $member->profile_photo;

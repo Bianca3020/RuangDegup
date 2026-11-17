@@ -1715,13 +1715,19 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
                   </label>
                   <input
                     id="book-year"
-                    type="number"
-                    min={1000}
-                    max={new Date().getFullYear()}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={4}
                     placeholder="YYYY"
                     className="form-input"
                     value={bookForm.tahun_terbit}
-                    onChange={(e) => setBookForm({ ...bookForm, tahun_terbit: e.target.value })}
+                    onChange={(e) =>
+                      setBookForm({
+                        ...bookForm,
+                        tahun_terbit: e.target.value.replace(/\D/g, '').slice(0, 4),
+                      })
+                    }
                     disabled={modalSubmitting}
                   />
                 </div>
@@ -1733,10 +1739,16 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
                   <input
                     id="book-isbn"
                     type="text"
+                    inputMode="numeric"
                     placeholder="978-..."
                     className="form-input"
                     value={bookForm.isbn}
-                    onChange={(e) => setBookForm({ ...bookForm, isbn: e.target.value })}
+                    onChange={(e) =>
+                      setBookForm({
+                        ...bookForm,
+                        isbn: e.target.value.replace(/[^0-9-]/g, ''),
+                      })
+                    }
                     disabled={modalSubmitting}
                   />
                 </div>
@@ -1749,12 +1761,18 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
                   </label>
                   <input
                     id="book-stock"
-                    type="number"
-                    min={0}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     required
                     className="form-input"
                     value={bookForm.stok}
-                    onChange={(e) => setBookForm({ ...bookForm, stok: e.target.value })}
+                    onChange={(e) =>
+                      setBookForm({
+                        ...bookForm,
+                        stok: e.target.value.replace(/\D/g, ''),
+                      })
+                    }
                     disabled={modalSubmitting}
                   />
                 </div>
@@ -2032,10 +2050,18 @@ export function AdminPanel({ currentUser, onExitAdmin }) {
                   <input
                     id="member-phone"
                     type="tel"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={20}
                     placeholder="08..."
                     className="form-input"
                     value={memberForm.no_hp}
-                    onChange={(e) => setMemberForm({ ...memberForm, no_hp: e.target.value })}
+                    onChange={(e) =>
+                      setMemberForm({
+                        ...memberForm,
+                        no_hp: e.target.value.replace(/\D/g, ''),
+                      })
+                    }
                     disabled={modalSubmitting}
                   />
                 </div>
